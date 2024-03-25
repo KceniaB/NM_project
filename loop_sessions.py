@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import ibldsp.utils
+from functions_nm import load_trials 
 
 #%%
 mouse           = 'N5' 
