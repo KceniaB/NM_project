@@ -292,3 +292,6 @@ df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
 
 
 fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry)
+
+
+
