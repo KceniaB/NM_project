@@ -8,7 +8,7 @@ one = ONE()
 import matplotlib.pyplot as plt 
 import seaborn as sns
 # from functions_nm import load_trials 
-
+from functions_nm import *
 
 #%%
 """ PHOTOMETRY """
@@ -165,3 +165,130 @@ verify_repetitions(df_PhotometryData["LedState"])
 session_day=date
 plot_outliers(df_470,df_415,region,mouse,session_day) 
 # %%
+# Select a subset of df_PhotometryData and reset the index
+df_PhotometryData_1 = df_PhotometryData
+
+# Remove rows with LedState 1 at both ends if present
+if df_PhotometryData_1['LedState'].iloc[0] == 1 and df_PhotometryData_1['LedState'].iloc[-1] == 1:
+    df_PhotometryData_1 = df_PhotometryData_1.iloc[1:]
+
+# Remove rows with LedState 2 at both ends if present
+if df_PhotometryData_1['LedState'].iloc[0] == 2 and df_PhotometryData_1['LedState'].iloc[-1] == 2:
+    df_PhotometryData_1 = df_PhotometryData_1.iloc[:-2]
+
+# Filter data for LedState 2 (470nm)
+df_470 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 2]
+
+# Filter data for LedState 1 (415nm)
+df_415 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 1]
+
+# Check if the lengths of df_470 and df_415 are equal
+assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
+
+# Plot the data
+plt.rcParams["figure.figsize"] = (8, 5)
+plt.plot(df_470[region], c='#279F95', linewidth=0.5)
+plt.plot(df_415[region], c='#803896', linewidth=0.5)
+plt.title("Cropped signal, what to use next")
+plt.legend(["GCaMP", "isosbestic"], frameon=False)
+sns.despine(left=False, bottom=False)
+plt.show()
+
+# Print counts
+print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
+
+
+#%%
+# Select a subset of df_PhotometryData and reset the index
+df_PhotometryData_1 = df_PhotometryData
+
+# Remove rows with LedState 1 at both ends if present
+if df_PhotometryData_1['LedState'].iloc[0] == 1 and df_PhotometryData_1['LedState'].iloc[-1] == 1:
+    df_PhotometryData_1 = df_PhotometryData_1.iloc[1:]
+
+# Remove rows with LedState 2 at both ends if present
+if df_PhotometryData_1['LedState'].iloc[0] == 2 and df_PhotometryData_1['LedState'].iloc[-1] == 2:
+    df_PhotometryData_1 = df_PhotometryData_1.iloc[:-2]
+
+# Filter data for LedState 2 (470nm)
+df_470 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 2]
+
+# Filter data for LedState 1 (415nm)
+df_415 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 1]
+
+# Check if the lengths of df_470 and df_415 are equal
+assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
+
+# Plot the data
+plt.rcParams["figure.figsize"] = (8, 5)
+plt.plot(df_470[region], c='#279F95', linewidth=0.5)
+plt.plot(df_415[region], c='#803896', linewidth=0.5)
+plt.title("Cropped signal, what to use next")
+plt.legend(["GCaMP", "isosbestic"], frameon=False)
+sns.despine(left=False, bottom=False)
+plt.show()
+
+# Print counts
+print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
+
+#%%
+# %% 
+df_PhotometryData = df_PhotometryData_1.reset_index(drop=True)  
+df_470 = df_PhotometryData[df_PhotometryData.LedState==2] 
+df_470 = df_470.reset_index(drop=True)
+df_415 = df_PhotometryData[df_PhotometryData.LedState==1] 
+df_415 = df_415.reset_index(drop=True) 
+#================================================
+""" 4.1.4 FRAME RATE """ 
+acq_FR = find_FR(df_470["Timestamp"]) 
+
+
+#%%
+import scipy.signal
+
+raw_reference = df_415[region] #isosbestic 
+raw_signal = df_470[region] #GCaMP signal 
+
+
+
+sos = scipy.signal.butter(**{'N': 3, 'Wn': 0.05, 'btype': 'highpass'}, output='sos')
+butt = scipy.signal.sosfiltfilt(sos, raw_signal) 
+
+plt.plot(butt)
+butt = scipy.signal.sosfiltfilt(sos, raw_reference) 
+plt.plot(butt,alpha=0.5)
+plt.show()
+
+# %%
+raw_reference = df_415[region] #isosbestic 
+raw_signal = df_470[region] #GCaMP signal 
+raw_timestamps_bpod = df_470["bpod_frame_times_feedback_times"]
+raw_timestamps_nph_470 = df_470["Timestamp"]
+raw_timestamps_nph_415 = df_415["Timestamp"]
+raw_TTL_bpod = bpod_sync
+raw_TTL_nph = nph_sync
+
+plt.plot(raw_signal[:],color="#60d394")
+plt.plot(raw_reference[:],color="#c174f2") 
+plt.legend(["signal","isosbestic"],fontsize=15, loc="best")
+plt.show() 
+# %%
+
+my_array = np.c_[raw_timestamps_bpod, raw_reference, raw_signal]
+
+df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
+
+
+from pathlib import Path
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import iblphotometry.plots
+import iblphotometry.dsp
+
+
+df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
+
+
+fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry)
