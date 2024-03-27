@@ -1,6 +1,7 @@
 
 
 #%%
+import numpy as np
 import pandas as pd 
 from brainbox.io.one import SessionLoader
 from one.api import ONE
@@ -8,7 +9,12 @@ one = ONE()
 import matplotlib.pyplot as plt 
 import seaborn as sns
 # from functions_nm import load_trials 
-from functions_nm import *
+from functions_nm import * 
+import neurodsp.utils 
+from pathlib import Path
+import iblphotometry.plots
+import iblphotometry.dsp
+
 
 #%%
 """ PHOTOMETRY """
@@ -64,12 +70,11 @@ df_raw_phdata_DI0_T_timestamp = df_raw_phdata_DI0_T_timestamp.reset_index(drop=T
 
 #%%
 import numpy as np
-df_trials = df
+df_trials = trials
 tph = df_raw_phdata_DI0_T_timestamp.values[:, 0]
 tbpod = np.sort(np.r_[df_trials['intervals_0'].values, df_trials['intervals_1'].values, df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values])
 
 #%%
-import neurodsp.utils 
 # plotting tnph and tbpod
 fig, axs = plt.subplots(2, 1)
 axs[0].plot(np.diff(tph))
@@ -107,7 +112,7 @@ df_PhotometryData["bpod_frame_times_feedback_times"] = fcn_nph_to_bpod_times(df_
 #%% 
 plt.figure(figsize=(20, 10))
 plt.plot(df_PhotometryData.bpod_frame_times_feedback_times, df_PhotometryData[region],color = "#25a18e") 
-
+df_alldata=df_trials
 xcoords = df_alldata.feedback_times
 for xc in zip(xcoords):
     plt.axvline(x=xc, color='blue',linewidth=0.3)
@@ -244,20 +249,20 @@ acq_FR = find_FR(df_470["Timestamp"])
 
 
 #%%
-import scipy.signal
+# import scipy.signal
 
-raw_reference = df_415[region] #isosbestic 
-raw_signal = df_470[region] #GCaMP signal 
+# raw_reference = df_415[region] #isosbestic 
+# raw_signal = df_470[region] #GCaMP signal 
 
 
 
-sos = scipy.signal.butter(**{'N': 3, 'Wn': 0.05, 'btype': 'highpass'}, output='sos')
-butt = scipy.signal.sosfiltfilt(sos, raw_signal) 
+# sos = scipy.signal.butter(**{'N': 3, 'Wn': 0.05, 'btype': 'highpass'}, output='sos')
+# butt = scipy.signal.sosfiltfilt(sos, raw_signal) 
 
-plt.plot(butt)
-butt = scipy.signal.sosfiltfilt(sos, raw_reference) 
-plt.plot(butt,alpha=0.5)
-plt.show()
+# plt.plot(butt)
+# butt = scipy.signal.sosfiltfilt(sos, raw_reference) 
+# plt.plot(butt,alpha=0.5)
+# plt.show()
 
 # %%
 raw_reference = df_415[region] #isosbestic 
@@ -278,16 +283,6 @@ my_array = np.c_[raw_timestamps_bpod, raw_reference, raw_signal]
 
 df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
 
-
-from pathlib import Path
-
-import pandas as pd
-import matplotlib.pyplot as plt
-
-import iblphotometry.plots
-import iblphotometry.dsp
-
-
 df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
 
 
@@ -295,3 +290,5 @@ fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry)
 
 
 
+
+# %%
