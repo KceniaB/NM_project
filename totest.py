@@ -292,3 +292,303 @@ fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry)
 
 
 # %%
+""" search the idx where "event_test" fits in "df_test" in a sorted way """
+array_timestamps_bpod = np.array(df.times) #pick the nph timestamps transformed to bpod clock 
+event_test = np.array(df_alldata.intervals_0) #pick the intervals_0 timestamps 
+idx_event = np.searchsorted(array_timestamps_bpod, event_test) #check idx where they would be included, in a sorted way 
+print(idx_event)
+
+
+#%%
+""" create a column with the trial number in the nph df """
+df["trial_number"] = 0 #create a new column for the trial_number 
+# for i in idx_event: 
+#     df["trial_number"][i] = 1 #add an 1 whenever that event occurred (intervals_0) 
+df.loc[idx_event,"trial_number"]=1
+
+df["trial_number"] = df.trial_number.cumsum() #sum the [i-1] to i in order to get the trial number 
+
+# df.to_parquet('/home/kcenia/Desktop/testserver_2023_08_31/photometry20230831.parquet') 
+
+#%% 
+PERIEVENT_WINDOW = [-1,2] #never to be changed!!! "constant" 
+SAMPLING_RATE = 30 #not a constant: print(1/np.mean(np.diff(array_timestamps_bpod))) #sampling rate 
+sample_window = np.arange(PERIEVENT_WINDOW[0] * SAMPLING_RATE, PERIEVENT_WINDOW[1] * SAMPLING_RATE + 1)
+n_trials = df_alldata.shape[0]
+
+# psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
+psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials-1))
+
+event_feedback = np.array(df_alldata.feedback_times) #pick the feedback timestamps 
+event_feedback = event_feedback[0:len(event_feedback)-1] #KB added 20240327 CHECK WITH OW
+
+feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback) #check idx where they would be included, in a sorted way 
+
+
+psth_idx += feedback_idx
+
+df.calcium.values[psth_idx] 
+
+#%%
+sns.heatmap(df.calcium.values[psth_idx])
+# sns.heatmap(df.zdFF.values[psth_idx].T)
+
+plt.axhline(y=30, color = "black", alpha=0.9, linewidth = 3, linestyle="dashed")
+
+# %%
+# behav_value = df_alldata.contrastLeft.values
+# trial_index = np.lexsort((np.arange(n_trials), behav_value))
+sns.heatmap(df.calcium.values[psth_idx].T, cbar=True)
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
+""" ALTERNATIVE #2 """
+'''
+get_zdFF.py calculates standardized dF/F signal based on calcium-idependent 
+and calcium-dependent signals commonly recorded using fiber photometry calcium imaging
+
+Reference:
+  (1) Martianova, E., Aronson, S., Proulx, C.D. Multi-Fiber Photometry 
+      to Record Neural Activity in Freely Moving Animal. J. Vis. Exp. 
+      (152), e60278, doi:10.3791/60278 (2019)
+      https://www.jove.com/video/60278/multi-fiber-photometry-to-record-neural-activity-freely-moving
+
+'''
+
+def get_zdFF(reference,signal,smooth_win=10,remove=200,lambd=5e4,porder=1,itermax=50): 
+  '''
+  Calculates z-score dF/F signal based on fiber photometry calcium-idependent 
+  and calcium-dependent signals
+  
+  Input
+      reference: calcium-independent signal (usually 405-420 nm excitation), 1D array
+      signal: calcium-dependent signal (usually 465-490 nm excitation for 
+                   green fluorescent proteins, or ~560 nm for red), 1D array
+      smooth_win: window for moving average smooth, integer
+      remove: the beginning of the traces with a big slope one would like to remove, integer
+      Inputs for airPLS:
+      lambd: parameter that can be adjusted by user. The larger lambda is,  
+              the smoother the resulting background, z
+      porder: adaptive iteratively reweighted penalized least squares for baseline fitting
+      itermax: maximum iteration times
+  Output
+      zdFF - z-score dF/F, 1D numpy array
+  '''
+  
+  import numpy as np
+  from sklearn.linear_model import Lasso
+
+ # Smooth signal
+  reference = smooth_signal(reference, smooth_win)
+  signal = smooth_signal(signal, smooth_win)
+  
+ # Remove slope using airPLS algorithm
+  r_base=airPLS(reference,lambda_=lambd,porder=porder,itermax=itermax)
+  s_base=airPLS(signal,lambda_=lambd,porder=porder,itermax=itermax) 
+
+ # Remove baseline and the begining of recording
+  reference = (reference[remove:] - r_base[remove:])
+  signal = (signal[remove:] - s_base[remove:])   
+
+ # Standardize signals    
+  reference = (reference - np.median(reference)) / np.std(reference)
+  signal = (signal - np.median(signal)) / np.std(signal)
+  
+ # Align reference signal to calcium signal using non-negative robust linear regression
+  lin = Lasso(alpha=0.0001,precompute=True,max_iter=1000,
+              positive=True, random_state=9999, selection='random')
+  n = len(reference)
+  lin.fit(reference.reshape(n,1), signal.reshape(n,1))
+  reference = lin.predict(reference.reshape(n,1)).reshape(n,)
+
+ # z dFF    
+  zdFF = (signal - reference)
+ 
+  return zdFF
+
+def smooth_signal(x,window_len=10,window='flat'):
+
+    """smooth the data using a window with requested size.
+    
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal 
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+    The code taken from: https://scipy-cookbook.readthedocs.io/items/SignalSmooth.html
+    
+    input:
+        x: the input signal 
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+                'flat' window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal        
+    """
+
+    import numpy as np
+
+    if x.ndim != 1:
+        raise(ValueError, "smooth only accepts 1 dimension arrays.")
+
+    if x.size < window_len:
+        raise(ValueError, "Input vector needs to be bigger than window size.")
+
+    if window_len<3:
+        return x
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise(ValueError, "Window is one of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+
+    if window == 'flat': # Moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+
+    y=np.convolve(w/w.sum(),s,mode='valid')
+
+    return y[(int(window_len/2)-1):-int(window_len/2)]
+
+import numpy as np
+from scipy.sparse import csc_matrix, eye, diags
+from scipy.sparse.linalg import spsolve
+
+def WhittakerSmooth(x,w,lambda_,differences=1):
+    '''
+    Penalized least squares algorithm for background fitting
+    
+    input
+        x: input data (i.e. chromatogram of spectrum)
+        w: binary masks (value of the mask is zero if a point belongs to peaks and one otherwise)
+        lambda_: parameter that can be adjusted by user. The larger lambda is,  the smoother the resulting background
+        differences: integer indicating the order of the difference of penalties
+    
+    output
+        the fitted background vector
+    '''
+    X=np.matrix(x)
+    m=X.size
+    i=np.arange(0,m)
+    E=eye(m,format='csc')
+    D=E[1:]-E[:-1] # numpy.diff() does not work with sparse matrix. This is a workaround.
+    W=diags(w,0,shape=(m,m))
+    A=csc_matrix(W+(lambda_*D.T*D))
+    B=csc_matrix(W*X.T)
+    background=spsolve(A,B)
+    return np.array(background)
+
+def airPLS(x, lambda_=100, porder=1, itermax=15):
+    '''
+    Adaptive iteratively reweighted penalized least squares for baseline fitting
+    
+    input
+        x: input data (i.e. chromatogram of spectrum)
+        lambda_: parameter that can be adjusted by user. The larger lambda is,
+                 the smoother the resulting background, z
+        porder: adaptive iteratively reweighted penalized least squares for baseline fitting
+    
+    output
+        the fitted background vector
+    '''
+    m=x.shape[0]
+    w=np.ones(m)
+    for i in range(1,itermax+1):
+        z=WhittakerSmooth(x,w,lambda_, porder)
+        d=x-z
+        dssn=np.abs(d[d<0].sum())
+        if(dssn<0.001*(abs(x)).sum() or i==itermax):
+            if(i==itermax): print('WARING max iteration reached!')
+            break
+        w[d>=0]=0 # d>0 means that this point is part of a peak, so its weight is set to 0 in order to ignore it
+        w[d<0]=np.exp(i*np.abs(d[d<0])/dssn)
+        w[0]=np.exp(i*(d[d<0]).max()/dssn) 
+        w[-1]=w[0]
+    return z
+
+# %%
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+# %%
+df 
+
+# %%

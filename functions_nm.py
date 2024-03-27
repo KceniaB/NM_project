@@ -1039,3 +1039,18 @@ def verify_length_2(x,y):
 #     plt.show() 
 #     return frame_times
 # %%
+        
+
+
+
+
+""" 
+HOW TO GIT PULL AND USE "WITHOUT UPDATING EVERYTIME"
+""" 
+# (env) kceniabougrova@joana-ccu-pc:~/Documents/GitHub$ cd ibl-photometry/
+# (env) kceniabougrova@joana-ccu-pc:~/Documents/GitHub/ibl-photometry$ pip install -e .
+
+# (env) kceniabougrova@joana-ccu-pc:~/Documents/GitHub/ibl-photometry$ git pull
+# Already up to date.
+# (env) kceniabougrova@joana-ccu-pc:~/Documents/GitHub/ibl-photometry$ cd ibl-photometry/^C
+# (env) kceniabougrova@joana-ccu-pc:~/Documents/GitHub/ibl-photometry$ pip install -e .^C
