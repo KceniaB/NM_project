@@ -66,10 +66,10 @@ else:
 #use Timestamp from this part on, for any of the files
 raw_phdata_DI0_true = df_DI0[df_DI0.Value==True]
 df_raw_phdata_DI0_T_timestamp = pd.DataFrame(raw_phdata_DI0_true, columns=["Timestamp"])
+# raw_phdata_DI0_true = pd.DataFrame(df_DI0.Timestamp[df_DI0.Value==True], columns=['Timestamp'])
 df_raw_phdata_DI0_T_timestamp = df_raw_phdata_DI0_T_timestamp.reset_index(drop=True)
 
 #%%
-import numpy as np
 df_trials = trials
 tph = df_raw_phdata_DI0_T_timestamp.values[:, 0]
 tbpod = np.sort(np.r_[df_trials['intervals_0'].values, df_trials['intervals_1'].values, df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values])
@@ -204,37 +204,37 @@ print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
 
 
 #%%
-# Select a subset of df_PhotometryData and reset the index
-df_PhotometryData_1 = df_PhotometryData
+# # Select a subset of df_PhotometryData and reset the index
+# df_PhotometryData_1 = df_PhotometryData
 
-# Remove rows with LedState 1 at both ends if present
-if df_PhotometryData_1['LedState'].iloc[0] == 1 and df_PhotometryData_1['LedState'].iloc[-1] == 1:
-    df_PhotometryData_1 = df_PhotometryData_1.iloc[1:]
+# # Remove rows with LedState 1 at both ends if present
+# if df_PhotometryData_1['LedState'].iloc[0] == 1 and df_PhotometryData_1['LedState'].iloc[-1] == 1:
+#     df_PhotometryData_1 = df_PhotometryData_1.iloc[1:]
 
-# Remove rows with LedState 2 at both ends if present
-if df_PhotometryData_1['LedState'].iloc[0] == 2 and df_PhotometryData_1['LedState'].iloc[-1] == 2:
-    df_PhotometryData_1 = df_PhotometryData_1.iloc[:-2]
+# # Remove rows with LedState 2 at both ends if present
+# if df_PhotometryData_1['LedState'].iloc[0] == 2 and df_PhotometryData_1['LedState'].iloc[-1] == 2:
+#     df_PhotometryData_1 = df_PhotometryData_1.iloc[:-2]
 
-# Filter data for LedState 2 (470nm)
-df_470 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 2]
+# # Filter data for LedState 2 (470nm)
+# df_470 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 2]
 
-# Filter data for LedState 1 (415nm)
-df_415 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 1]
+# # Filter data for LedState 1 (415nm)
+# df_415 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 1]
 
-# Check if the lengths of df_470 and df_415 are equal
-assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
+# # Check if the lengths of df_470 and df_415 are equal
+# assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
 
-# Plot the data
-plt.rcParams["figure.figsize"] = (8, 5)
-plt.plot(df_470[region], c='#279F95', linewidth=0.5)
-plt.plot(df_415[region], c='#803896', linewidth=0.5)
-plt.title("Cropped signal, what to use next")
-plt.legend(["GCaMP", "isosbestic"], frameon=False)
-sns.despine(left=False, bottom=False)
-plt.show()
+# # Plot the data
+# plt.rcParams["figure.figsize"] = (8, 5)
+# plt.plot(df_470[region], c='#279F95', linewidth=0.5)
+# plt.plot(df_415[region], c='#803896', linewidth=0.5)
+# plt.title("Cropped signal, what to use next")
+# plt.legend(["GCaMP", "isosbestic"], frameon=False)
+# sns.despine(left=False, bottom=False)
+# plt.show()
 
-# Print counts
-print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
+# # Print counts
+# print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
 
 #%%
 # %% 
@@ -312,7 +312,7 @@ df["trial_number"] = df.trial_number.cumsum() #sum the [i-1] to i in order to ge
 
 #%% 
 PERIEVENT_WINDOW = [-1,2] #never to be changed!!! "constant" 
-SAMPLING_RATE = 30 #not a constant: print(1/np.mean(np.diff(array_timestamps_bpod))) #sampling rate 
+SAMPLING_RATE = 30 #not a constant: print(1/np.mean(np.diff(array_timestamps_bpod))) #sampling rate #acq_FR
 sample_window = np.arange(PERIEVENT_WINDOW[0] * SAMPLING_RATE, PERIEVENT_WINDOW[1] * SAMPLING_RATE + 1)
 n_trials = df_alldata.shape[0]
 
@@ -324,7 +324,6 @@ event_feedback = event_feedback[0:len(event_feedback)-1] #KB added 20240327 CHEC
 
 feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback) #check idx where they would be included, in a sorted way 
 
-
 psth_idx += feedback_idx
 
 df.calcium.values[psth_idx] 
@@ -334,92 +333,23 @@ sns.heatmap(df.calcium.values[psth_idx])
 # sns.heatmap(df.zdFF.values[psth_idx].T)
 
 plt.axhline(y=30, color = "black", alpha=0.9, linewidth = 3, linestyle="dashed")
+# plt.savefig('/home/kceniabougrova/Documents/nph/2024-01-19/test1.png')
+plt.show() 
 
 # %%
 # behav_value = df_alldata.contrastLeft.values
 # trial_index = np.lexsort((np.arange(n_trials), behav_value))
 sns.heatmap(df.calcium.values[psth_idx].T, cbar=True)
+plt.axvline(x=30, color = "black", alpha=0.9, linewidth = 3, linestyle="dashed")
+
 # %%
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 #%%
 """ ALTERNATIVE #2 """
+""" https://colab.research.google.com/github/katemartian/Photometry_data_processing/blob/master/Photometry_data_processing.ipynb#scrollTo=rQ8dS2Da5ykE """
 '''
 get_zdFF.py calculates standardized dF/F signal based on calcium-idependent 
 and calcium-dependent signals commonly recorded using fiber photometry calcium imaging
@@ -432,7 +362,7 @@ Reference:
 
 '''
 
-def get_zdFF(reference,signal,smooth_win=10,remove=200,lambd=5e4,porder=1,itermax=50): 
+def get_zdFF(reference,signal,smooth_win=10,remove=0,lambd=5e4,porder=1,itermax=50): 
   '''
   Calculates z-score dF/F signal based on fiber photometry calcium-idependent 
   and calcium-dependent signals
@@ -528,7 +458,6 @@ def smooth_signal(x,window_len=10,window='flat'):
 
     return y[(int(window_len/2)-1):-int(window_len/2)]
 
-import numpy as np
 from scipy.sparse import csc_matrix, eye, diags
 from scipy.sparse.linalg import spsolve
 
@@ -585,10 +514,48 @@ def airPLS(x, lambda_=100, porder=1, itermax=15):
     return z
 
 # %%
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-# %%
 df 
+
+# %%
+# Adjust these lines depending on your dataframe
+raw_reference = df['raw_isosbestic'][0:]
+raw_signal = df['raw_calcium'][0:]
+
+#%%
+fig = plt.figure(figsize=(16, 10))
+ax1 = fig.add_subplot(211)
+ax1.plot(raw_signal,'blue',linewidth=0.25)
+ax2 = fig.add_subplot(212)
+ax2.plot(raw_reference,'purple',linewidth=0.25)
+# %%
+zdFF = get_zdFF(raw_reference,raw_signal) 
+
+df["zdFF"] = zdFF
+# %%
+fig = plt.figure(figsize=(16, 8))
+ax1 = fig.add_subplot(111)
+ax1.plot(zdFF,'black',linewidth=0.25) 
+
+# %% 
+
+"""PLOTS""" 
+fig, axes = plt.subplots(3, figsize=(15, 15))
+fig.suptitle('Initial Pokemon - 1st Generation')
+
+# raw_isosbestic
+sns.lineplot(ax=axes[0], x=df['times'], y=df['raw_isosbestic'], linewidth=0.5, color="purple")
+axes[0].set_title("raw_isosbestic")
+
+# raw_calcium
+sns.lineplot(ax=axes[1], x=df['times'], y=df['raw_calcium'], linewidth=0.5, color="orange")
+axes[1].set_title("raw_calcium")
+
+# calcium
+sns.lineplot(ax=axes[2], x=df['times'], y=df['calcium'], linewidth=0.5, color="blue")
+axes[2].set_title("calcium")
+
+plt.tight_layout()
+plt.show()
+
 
 # %%
