@@ -359,8 +359,62 @@ plt.show()
 sns.heatmap(df.calcium.values[psth_idx].T, cbar=True)
 plt.axvline(x=30, color = "black", alpha=0.9, linewidth = 3, linestyle="dashed")
 
-# %%
 
+#%%
+a = ["intervals_0", "intervals_1", "goCue_times", "stimOn_times", "firstMovement_times", "feedback_times", "intervals_1"]
+def test_test_test(df_alldata=df_alldata, a="feedback_times", df=df):
+    PERIEVENT_WINDOW = [-1,2] #never to be changed!!! "constant" 
+    SAMPLING_RATE = 30 #not a constant: print(1/np.mean(np.diff(array_timestamps_bpod))) #sampling rate #acq_FR
+    sample_window = np.arange(PERIEVENT_WINDOW[0] * SAMPLING_RATE, PERIEVENT_WINDOW[1] * SAMPLING_RATE + 1)
+    n_trials = df_alldata.shape[0]
+
+    # psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
+    psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials-1))
+
+    event_feedback = np.array(df_alldata[a]) #pick the feedback timestamps 
+    event_feedback = event_feedback[0:len(event_feedback)-1] #KB added 20240327 CHECK WITH OW
+
+    feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback) #check idx where they would be included, in a sorted way 
+
+    psth_idx += feedback_idx
+
+    event_time=30
+    def create_heatmap(data, ax, ax_label, event_time):
+        sns.heatmap(data.T, cbar=False, ax=ax, linewidths=0)
+        ax.axvline(x=event_time, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+        ax.set_xlabel('time since event (s)')
+        ax.set_ylabel(ax_label)
+
+    # Function to create the line plot
+    def create_line_plot(data, ax, event_time):
+        average_values = data.mean(axis=1)
+        ax.plot(average_values, color='black')
+        ax.set_xlabel('time since event (s)')
+        ax.set_ylabel('zdFF')
+        ax.axvline(x=event_time, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+        ax.grid(False)
+
+    fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, gridspec_kw={'height_ratios': [4, 1]}, figsize=(20, 15), sharex=True) 
+
+    create_heatmap(df.raw_isosbestic.values[psth_idx], ax1, 'Raw Isosbestic', event_time)
+    create_heatmap(df.raw_calcium.values[psth_idx], ax2, 'Raw Calcium', event_time)
+    create_heatmap(df.calcium.values[psth_idx], ax3, 'Calcium', event_time)
+    create_heatmap(df.zdFF.values[psth_idx], ax4, 'zdFF', event_time)
+
+    create_line_plot(df.raw_isosbestic.values[psth_idx], ax5, event_time)
+    create_line_plot(df.raw_calcium.values[psth_idx], ax6, event_time)
+    create_line_plot(df.calcium.values[psth_idx], ax7, event_time)
+    create_line_plot(df.zdFF.values[psth_idx], ax8, event_time) 
+    plt.suptitle(a)  # Add a general title to the entire plot
+
+    plt.tight_layout()
+
+    plt.show() 
+
+for i in a: 
+    test_test_test(df_alldata=df_alldata, a=i, df=df)
+
+# %%
 
 
 
