@@ -18,10 +18,10 @@ import iblphotometry.dsp
 
 #%%
 """ PHOTOMETRY """
-date = "2024-01-19"
-mouse = "ZFM-06275"
-nphfile_number = "1"
-bncfile_number = "1"
+date = "2024-03-22"
+mouse = "ZFM-06948"
+nphfile_number = "0"
+bncfile_number = "0"
 region = "Region6G"
 
 source_folder = ("/home/kceniabougrova/Documents/nph/"+date+"/")
@@ -54,7 +54,24 @@ print(ref)
 
 # %% 
 a = one.load_object(eid, 'trials')
-trials = a.to_df()
+trials = a.to_df() 
+
+#%%
+"""
+Alternative to extract from the raw data
+""" 
+session_path_behav = '/home/kceniabougrova/Documents/nph/Behav_2024Mar20/ZFM-06948/2024-03-22/001/' 
+
+from ibllib.io.extractors.biased_trials import extract_all 
+df_alldata = extract_all(session_path_behav)
+
+# Extract the 'table' key from the first OrderedDict in df_alldata
+table_data = df_alldata[0]['table']
+
+# Convert the 'table' data into a DataFrame
+df_table = pd.DataFrame(table_data) 
+df_alldata = df_table 
+trials = df_table
 
 
 # %%
@@ -539,23 +556,61 @@ ax1.plot(zdFF,'black',linewidth=0.25)
 # %% 
 
 """PLOTS""" 
-fig, axes = plt.subplots(3, figsize=(15, 15))
-fig.suptitle('Initial Pokemon - 1st Generation')
+# Define width ratios for subplots
+width_ratios = [1, 1]
+FONTSIZE_1 = 30
+FONTSIZE_2 = 25
+FONTSIZE_3 = 15
+
+# Create subplots
+fig, axes = plt.subplots(4, 2, figsize=(25, 20), gridspec_kw={'width_ratios': width_ratios})
+fig.suptitle('Isosbestic and GCaMP traces', fontsize=FONTSIZE_1)  # Increase main title font size
+
+# Define start and end indices for x-axis limits
+start_index = df.times[int(len(df.times)/2)]
+end_index = df.times[int(len(df.times)/2)+250]
 
 # raw_isosbestic
-sns.lineplot(ax=axes[0], x=df['times'], y=df['raw_isosbestic'], linewidth=0.5, color="purple")
-axes[0].set_title("raw_isosbestic")
+sns.lineplot(ax=axes[0,0], x=df['times'], y=df['raw_isosbestic'], linewidth=0.1, color="#9d4edd")
+axes[0,0].set_title("raw_isosbestic", fontsize=FONTSIZE_2)  # Increase title font size
+
+sns.lineplot(ax=axes[0,1], x=df['times'], y=df['raw_isosbestic'], linewidth=2, color="#9d4edd")
+axes[0,1].set_xlim(start_index, end_index)
+axes[0,1].set_title("Zoomed raw_isosbestic", fontsize=FONTSIZE_2)  # Increase title font size
 
 # raw_calcium
-sns.lineplot(ax=axes[1], x=df['times'], y=df['raw_calcium'], linewidth=0.5, color="orange")
-axes[1].set_title("raw_calcium")
+sns.lineplot(ax=axes[1,0], x=df['times'], y=df['raw_calcium'], linewidth=0.1, color="#43aa8b")
+axes[1,0].set_title("raw_calcium", fontsize=FONTSIZE_2)  # Increase title font size
+
+sns.lineplot(ax=axes[1,1], x=df['times'], y=df['raw_calcium'], linewidth=2, color="#43aa8b")
+axes[1,1].set_xlim(start_index, end_index)
+axes[1,1].set_title("Zoomed raw_calcium", fontsize=FONTSIZE_2)  # Increase title font size
 
 # calcium
-sns.lineplot(ax=axes[2], x=df['times'], y=df['calcium'], linewidth=0.5, color="blue")
-axes[2].set_title("calcium")
+sns.lineplot(ax=axes[2,0], x=df['times'], y=df['calcium'], linewidth=0.1, color="#0081a7")
+axes[2,0].set_title("calcium", fontsize=FONTSIZE_2)  # Increase title font size
+
+sns.lineplot(ax=axes[2,1], x=df['times'], y=df['calcium'], linewidth=2, color="#0081a7")
+axes[2,1].set_xlim(start_index, end_index)
+axes[2,1].set_title("Zoomed calcium", fontsize=FONTSIZE_2)  # Increase title font size
+
+# zdFF
+sns.lineplot(ax=axes[3,0], x=df['times'], y=df['zdFF'], linewidth=0.1, color="#0081a7")
+axes[3,0].set_title("zdFF", fontsize=FONTSIZE_2)  # Increase title font size
+
+sns.lineplot(ax=axes[3,1], x=df['times'], y=df['zdFF'], linewidth=2, color="#0081a7")
+axes[3,1].set_xlim(start_index, end_index)
+axes[3,1].set_title("Zoomed zdFF", fontsize=FONTSIZE_2)  # Increase title font size
+
+# Increase axis label font size
+for ax in axes.flat:
+    ax.set_xlabel('Time', fontsize=FONTSIZE_2)
+    ax.set_ylabel('Values', fontsize=FONTSIZE_2) 
+    ax.tick_params(axis='both', which='major', labelsize=FONTSIZE_3)
 
 plt.tight_layout()
 plt.show()
+
 
 
 # %%
