@@ -683,8 +683,8 @@ def test_test_test(df_alldata=df_alldata, a="feedback_times", df=df):
     plt.tight_layout()
     path = '/home/kceniabougrova/Documents/results/figures'
     path_fig = 'fig1_'+mouse+'_'+date+'_'+region+'_'+a 
-    plt.savefig(os.path.join(path, path_fig + '.png'))
-    plt.savefig(os.path.join(path, path_fig + '.pdf')) 
+    plt.savefig(os.path.join(path, path_fig + '.png')) 
+    # plt.savefig(os.path.join(path, path_fig + '.pdf')) #not really working 
     plt.show() 
 
 for i in a: 
@@ -720,3 +720,145 @@ df_alldata.to_parquet(os.path.join(path, path_behav+'.parquet'), index=False)
 # df_csv = pd.read_csv(os.path.join(path, path_nph+'.csv'))
 # # Read the Parquet file
 # df_parquet = pd.read_parquet(os.path.join(path, path_nph+'.parquet')) 
+
+
+
+
+
+#%%
+#%% #####################################################################################################
+######################""" TO PLOT IN A LOOP HEATMAP AND LINEPLOT ALIGNED TO EVENT SPLIT """#################### 
+
+# a = ["intervals_0", "intervals_1", "goCue_times", "stimOn_times", "firstMovement_times", "feedback_times", "intervals_1"]
+def test_test_test(df_alldata=df_alldata, a="feedback_times", df=df):
+    PERIEVENT_WINDOW = [-1,2] #never to be changed!!! "constant" 
+    SAMPLING_RATE = 30 #not a constant: print(1/np.mean(np.diff(array_timestamps_bpod))) #sampling rate #acq_FR
+    sample_window = np.arange(PERIEVENT_WINDOW[0] * SAMPLING_RATE, PERIEVENT_WINDOW[1] * SAMPLING_RATE + 1)
+    n_trials = df_alldata.shape[0]
+
+    # psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
+    psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials-1))
+
+    event_feedback = np.array(df_alldata[a]) #pick the feedback timestamps 
+    event_feedback = event_feedback[0:len(event_feedback)-1] #KB added 20240327 CHECK WITH OW
+
+    feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback) #check idx where they would be included, in a sorted way 
+
+    psth_idx += feedback_idx
+
+    event_time=30
+    def create_heatmap(data, ax, ax_label, event_time):
+        sns.heatmap(data.T, cbar=False, ax=ax, linewidths=0)
+        ax.axvline(x=event_time, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+        ax.set_xlabel('time since event (s)', fontsize=FONTSIZE_2)
+        ax.set_ylabel(ax_label, fontsize=FONTSIZE_2)
+
+    # Function to create the line plot
+    def create_line_plot(data, ax, event_time):
+        average_values = data.mean(axis=1)
+        ax.plot(average_values, color='black')
+        ax.set_xlabel('time since event (s)', fontsize=FONTSIZE_2)
+        ax.set_ylabel('zdFF', fontsize=FONTSIZE_2)
+        ax.axvline(x=event_time, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+        ax.grid(False)
+
+    fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, gridspec_kw={'height_ratios': [4, 1]}, figsize=(20, 15), sharex=True) 
+
+    create_heatmap(df.raw_isosbestic.values[psth_idx], ax1, 'Raw Isosbestic', event_time)
+    create_heatmap(df.raw_calcium.values[psth_idx], ax2, 'Raw Calcium', event_time)
+    create_heatmap(df.calcium.values[psth_idx], ax3, 'Calcium', event_time)
+    create_heatmap(df.zdFF.values[psth_idx], ax4, 'zdFF', event_time)
+
+    create_line_plot(df.raw_isosbestic.values[psth_idx], ax5, event_time)
+    create_line_plot(df.raw_calcium.values[psth_idx], ax6, event_time)
+    create_line_plot(df.calcium.values[psth_idx], ax7, event_time)
+    create_line_plot(df.zdFF.values[psth_idx], ax8, event_time) 
+    plt.suptitle(a+" "+nm+" "+mouse+" "+date+" "+region+" "+nphfile_number+" "+bncfile_number, fontsize=FONTSIZE_1) 
+    for ax in [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8]:
+        ax.tick_params(axis='x', labelsize=FONTSIZE_3)
+        ax.tick_params(axis='y', labelsize=FONTSIZE_3)
+
+    plt.tight_layout()
+    path = '/home/kceniabougrova/Documents/results/figures'
+    path_fig = 'fig1_'+mouse+'_'+date+'_'+region+'_'+a 
+    plt.savefig(os.path.join(path, path_fig + '.png')) 
+    # plt.savefig(os.path.join(path, path_fig + '.pdf')) #not really working 
+    plt.show() 
+
+test_test_test(df_alldata=df_alldata, a="feedback_times", df=df) 
+
+
+#%%
+""" JUST THE LINEPLOT """ 
+data = df.calcium.values[psth_idx] 
+event_time = 30
+
+average_values = data.mean(axis=1)
+plt.plot(average_values, color='black')
+plt.xlabel('time since event (s)', fontsize=FONTSIZE_3)
+plt.ylabel('zdFF', fontsize=FONTSIZE_3)
+plt.axvline(x=event_time, color="black", alpha=0.9, linewidth=1.5, linestyle="dashed")
+plt.grid(False)
+
+plt.plot 
+
+
+
+
+# %%
+
+tph_1 = tph[15:len(tph)] 
+""" Join the 3 behav events that are associated to the TTL that is sent, with tph and tbpod """
+# Step 1: Create DataFrames for each event type
+feedbackType_1 = df_trials[df_trials["feedbackType"]==1]
+feedbackType_1=feedbackType_1.reset_index(drop=True) 
+
+df_intervals_0 = pd.DataFrame({'times': df_trials['intervals_0'], 'event_name': 'intervals_0'})
+df_intervals_1 = pd.DataFrame({'times': df_trials['intervals_1'], 'event_name': 'intervals_1'}) 
+df_feedback_times = pd.DataFrame({'times': feedbackType_1['feedback_times'], 'event_name': 'feedback_times'}) 
+
+# Step 2: Concatenate DataFrames
+df_concatenated = pd.concat([df_intervals_0, df_intervals_1, df_feedback_times])
+
+# Step 3: Sort by 'times'
+df_concatenated.sort_values(by='times', inplace=True)
+df_concatenated["tph"] = tph_1
+df_concatenated["tbpod"] = tbpod
+
+# Step 4: Extract times related to intervals_0
+times_related_to_intervals_0 = df_concatenated[df_concatenated['event_name'] == 'intervals_0']['times'].values 
+
+tphtimes_related_to_intervals_0 = pd.DataFrame(df_concatenated[df_concatenated['event_name'] == 'intervals_0']['tph'].values, columns=["intervals_0_tph"]) 
+df_events = pd.concat([tphtimes_related_to_intervals_0, df_trials], axis=1)
+
+df_events['trial_number'] = df_events.reset_index().index + 1 
+
+
+table_x = ["intervals_0", "goCue_times", "stimOn_times", "firstMovement_times", "feedback_times", "intervals_1"]
+
+table_y = pd.concat([df_events['choice'], df_events['contrastLeft'], df_events['contrastRight'], df_events['feedbackType'], 
+                     df_events['rewardVolume'], df_events['probabilityLeft'], df_events['trial_number']], axis=1) 
+
+
+
+
+
+onetime_allnontime={} 
+for x in table_x: 
+    for i in range(0, len(table_x)): 
+        onetime_allnontime["{0}".format(x)] = pd.concat([df_events["{0}".format(x)], 
+                                table_y], axis=1) #join df_events of each table_x to the entire table_y
+        onetime_allnontime["{0}".format(x)]["name"] = "{0}".format(x) #names with "name" the column to which table_x time name it is associated to
+        onetime_allnontime["{0}".format(x)] = onetime_allnontime["{0}".format(x)].rename(columns={"{0}".format(x): 'times'}) #renames the new created column with "times"
+
+onetime_allnontime_2=pd.DataFrame(onetime_allnontime["intervals_0"]) #create a df with the data of the previous loop's first time event
+for x in table_x[1:len(table_x)]: 
+    onetime_allnontime_2 = pd.concat([onetime_allnontime_2,(onetime_allnontime["{0}".format(x)])], ignore_index=True) 
+onetime_allnontime_2 = onetime_allnontime_2.reset_index(drop=True) #reset the index
+df_events_sorted = onetime_allnontime_2.sort_values(by=['times']) #sort all the rows by the time of the events
+# to check what are the nans: 
+#test = df_events_sorted[df_events_sorted['times'].isna()]
+#test.name.unique()
+df_events_sorted = df_events_sorted.dropna(subset=['times']) #drop the nan rows - may be associated to the stimFreeze_times, stimFreezeTrigger_times, errorCueTrigger_times
+df_events_sorted = df_events_sorted.reset_index() 
+# %%
