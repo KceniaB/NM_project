@@ -1,51 +1,50 @@
 """
-2024-March-15
+2024-April-11
 KceniaB 
 
 """ 
 
-#%%
-# imports and loading data
-from pathlib import Path
+import numpy as np
 import pandas as pd 
-import matplotlib.pyplot as plt
-import numpy as np
-import ibldsp.utils
-from functions_nm import load_trials 
-
-#%%
-mouse           = 'N5' 
-date            = '2023-08-31' 
-region          = 'Region4G' 
-main_path       = '/home/kcenia/Documents/Photometry_results/' + date + '/' 
-session_path    = main_path+'raw_photometry2.csv' 
-session_path_behav = main_path + mouse + '/'
-io_path         = main_path+'bonsai_DI12.csv' 
-init_idx = 100 
-
-
-""" PHOTOMETRY """
-df_PhotometryData = pd.read_csv(session_path) 
-df_ph = pd.read_csv(io_path)  # Index(['Timestamp', 'Value.Seconds', 'Value.Value'], dtype='object') 
-
-""" BEHAVIOR """ 
-# Alternative1
-# df_trials = pd.read_parquet(main_path + mouse + '/alf/_ibl_trials.table.pqt') 
-
-#%%
-# Alternative2 
-from one.api import ONE 
-one = ONE(mode="remote") #new way to load the data KB 01092023
-import numpy as np
-import pandas as pd
+from brainbox.io.one import SessionLoader
+from one.api import ONE
+one = ONE()
 import matplotlib.pyplot as plt 
-from brainbox.behavior.training import compute_performance 
-# %%
-# Alternative2 loading the behavior data
-eids = one.search(subject='ZFM-06275') 
-len(eids)
-eid = eids[23]
-ref = one.eid2ref(eid)
-print(ref)
+import seaborn as sns
+# from functions_nm import load_trials 
+from functions_nm2 import * 
+import neurodsp.utils 
+from pathlib import Path
+import iblphotometry.plots
+import iblphotometry.dsp 
 
-# %%
+df1 = pd.read_excel('/home/kceniabougrova/Downloads/Mice performance tables 100.xlsx' , 'A4_2024') 
+
+
+
+
+
+
+""" PHOTOMETRY """ 
+df_test = df1[(df1.date == "2024-03-22") & (df1.Mouse == "ZFM-06275")]
+def extract_data_info(df = df1): 
+    for i in range(len(df["Mouse"])): 
+        date = df.date #"2024-03-22"
+        mouse = df.Mouse #"ZFM-06948" 
+        nphfile_number = df.nph_file #"0"
+        bncfile_number = df.nph_bnc #"0"
+        # region = "Region"+(df["region"])+"G" 
+    return mouse, date, nphfile_number, bncfile_number 
+#, region 
+
+mouse, date, nphfile_number, bncfile_number = extract_data_info(df = df_test)
+
+if mouse == "ZFM-06948" or mouse == "ZFM-06305":
+    nm = "ACh"
+
+source_folder = ("/home/kceniabougrova/Documents/nph/"+date+"/")
+df_nph = pd.read_csv(source_folder+"raw_photometry"+nphfile_number+".csv") 
+df_nphttl = pd.read_csv(source_folder+"bonsai_DI"+bncfile_number+nphfile_number+".csv")
+
+
+

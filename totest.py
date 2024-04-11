@@ -104,6 +104,39 @@ df_trials = trials
 tph = df_raw_phdata_DI0_T_timestamp.values[:, 0]
 tbpod = np.sort(np.r_[df_trials['intervals_0'].values, df_trials['intervals_1'].values, df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values])
 
+
+
+
+
+#%%
+""" from old code """ 
+import neurodsp.utils
+try:
+    tbpod = np.sort(np.r_[
+    df_trials['intervals_0'].values,
+    df_trials['intervals_1'].values,
+    df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
+    )
+    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    assert len(iph)/len(tbpod) > .9
+except AssertionError:
+    print("mismatch in sync, will try to add ITI duration to the sync")
+    tbpod = np.sort(np.r_[
+    df_trials['intervals_0'].values,
+    df_trials['intervals_1'].values - 1,  # here is the trick
+    df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
+    )
+    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    assert len(iph)/len(tbpod) > .9
+    print("recovered from sync mismatch, continuing")
+
+
+
+
+
+
+
+
 #%%
 # plotting tnph and tbpod
 fig, axs = plt.subplots(2, 1)
