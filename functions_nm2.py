@@ -1,4 +1,12 @@
 
+import numpy as np
+import pandas as pd 
+from one.api import ONE
+one = ONE()
+from ibllib.io.extractors.biased_trials import extract_all 
+from brainbox.io.one import SessionLoader
+import neurodsp.utils
+
 def extract_data_info(df): 
     """ 
     extracts in string format the mouse name, date of the session, nph file number, bnc file number and regions
@@ -28,5 +36,31 @@ def get_eid(mouse,date):
     ref = one.eid2ref(eid)
     print(eid)
     print(ref) 
-    return eid 
-        
+    try:
+        # Try to load the trials directly
+        a = one.load_object(eid, 'trials')
+        trials = a.to_df()
+    except Exception as e:
+        # If loading fails, use the alternative method
+        print("Failed to load trials directly. Using alternative method...")
+        session_path_behav = '/home/kceniabougrova/Documents/nph/Behav_2024Mar20/ZFM-06948/2024-03-22/001/'
+        df_alldata = extract_all(session_path_behav)
+        table_data = df_alldata[0]['table']
+        trials = pd.DataFrame(table_data) 
+    return eid, trials 
+    
+def get_ttl(df_DI0, df_trials): 
+    if 'Value.Value' in df_DI0.columns: #for the new ones
+        df_DI0 = df_DI0.rename(columns={"Value.Seconds": "Seconds", "Value.Value": "Value"})
+    else:
+        df_DI0["Timestamp"] = df_DI0["Seconds"] #for the old ones
+    #use Timestamp from this part on, for any of the files
+    raw_phdata_DI0_true = df_DI0[df_DI0.Value==True]
+    df_raw_phdata_DI0_T_timestamp = pd.DataFrame(raw_phdata_DI0_true, columns=["Timestamp"])
+    # raw_phdata_DI0_true = pd.DataFrame(df_DI0.Timestamp[df_DI0.Value==True], columns=['Timestamp'])
+    df_raw_phdata_DI0_T_timestamp = df_raw_phdata_DI0_T_timestamp.reset_index(drop=True) 
+    tph = df_raw_phdata_DI0_T_timestamp.values[:, 0] 
+    tbpod = np.sort(np.r_[df_trials['intervals_0'].values, df_trials['intervals_1'].values, df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values])
+    return tph, tbpod 
+
+
