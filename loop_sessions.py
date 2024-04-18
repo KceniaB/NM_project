@@ -11,21 +11,23 @@ Update:
 
 import numpy as np
 import pandas as pd 
-from brainbox.io.one import SessionLoader
-from one.api import ONE
-one = ONE()
 import matplotlib.pyplot as plt 
 import seaborn as sns
 # from functions_nm import load_trials 
-from functions_nm2 import * 
+import functions_nm2 
 import neurodsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 
 import neurodsp.utils
+from brainbox.io.one import SessionLoader
 
+from one.api import ONE #always after the imports 
+one = ONE()
 
-df1 = pd.read_excel('/home/kceniabougrova/Downloads/Mice performance tables 100.xlsx' , 'A4_2024') 
+dtype = {'nph_file': int, 'nph_bnc': int, 'region': int}
+df1 = pd.read_excel('/home/kceniabougrova/Downloads/Mice performance tables 100.xlsx' , 'A4_2024',dtype=dtype) 
+
 
 
 #%%
@@ -33,222 +35,210 @@ df1 = pd.read_excel('/home/kceniabougrova/Downloads/Mice performance tables 100.
 # df_test = df1[(df1.date == "2024-01-24") & (df1.Mouse == "ZFM-06948")] 
 # df_test = df1[(df1.date == "2024-03-22") & (df1.Mouse == "ZFM-06948")]
 
-for number in range(len(df1["Mouse"])): 
-    if df1.Mouse[number] == 'ZFM-06948': 
-        #get data info
-        mouse, date, nphfile_number, bncfile_number, region, region2, nm = extract_data_info(df=df1,index=number)
-        #get behav
-        eid, df_trials = get_eid(mouse=mouse,date=date) 
-        #get photometry 
-        df_nph, df_nphttl = get_nph(date=date, nphfile_number=nphfile_number, bncfile_number=bncfile_number)
-        #get TTLs 
-        tph, tbpod = get_ttl(df_DI0 = df_nphttl, df_trials = df_trials) 
+for i,rec in df1.iterrows(): 
+    if rec.mouse == 'ZFM-06948': 
+        continue
+    #get data info
+    regions = functions_nm2.get_regions(rec)
+    #get behav
+    eid, df_trials = functions_nm2.get_eid(rec) 
+    #get photometry 
+    df_nph, df_nphttl = functions_nm2.get_nph(rec)
+    #get TTLs 
+    tph, tbpod = functions_nm2.get_ttl(df_DI0 = df_nphttl, df_trials = df_trials) 
 
+    df_PhotometryData = df_nph
 
+    try:
+        tbpod = np.sort(np.r_[
+        df_trials['intervals_0'].values,
+        df_trials['intervals_1'].values,
+        df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
+        )
+        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+        assert len(iph)/len(tbpod) > .9
+    except AssertionError:
+        print("mismatch in sync, will try to add ITI duration to the sync")
+        tbpod = np.sort(np.r_[
+        df_trials['intervals_0'].values,
+        df_trials['intervals_1'].values - 1,  # here is the trick
+        df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
+        )
+        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+        assert len(iph)/len(tbpod) > .9
+        print("recovered from sync mismatch, continuing") 
 
+    fig, axs = plt.subplots(2, 1)
+    axs[0].plot(np.diff(tph))
+    axs[0].plot(np.diff(tbpod))
+    axs[0].legend(['ph', 'pbod'])
 
+    print('max deviation:', np.max(np.abs(fcn_nph_to_bpod_times(tph[iph]) - tbpod[ibpod]) * 1e6), 'drift: ', drift_ppm, 'ppm')
 
+    #fcn_nph_to_bpod_times  # apply this function to whatever photometry timestamps
 
+    axs[1].plot(np.diff(fcn_nph_to_bpod_times(tph[iph])))
+    axs[1].plot(np.diff(tbpod[ibpod]))
+    axs[1].legend(['ph', 'pbod']) 
+    fig.savefig(f'/home/kceniabougrova/Documents/results_for_OW/Fig00_TTL_{rec.mouse}_{rec.date}_{rec.region}.png')
 
 
 
-        try:
-            tbpod = np.sort(np.r_[
-            df_trials['intervals_0'].values,
-            df_trials['intervals_1'].values,
-            df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
-            )
-            fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
-            assert len(iph)/len(tbpod) > .9
-        except AssertionError:
-            print("mismatch in sync, will try to add ITI duration to the sync")
-            tbpod = np.sort(np.r_[
-            df_trials['intervals_0'].values,
-            df_trials['intervals_1'].values - 1,  # here is the trick
-            df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
-            )
-            fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
-            assert len(iph)/len(tbpod) > .9
-            print("recovered from sync mismatch, continuing") 
+    # intervals_0_event = np.sort(np.r_[df_trials['intervals_0'].values]) 
+    # len(intervals_0_event)
 
-        fig, axs = plt.subplots(2, 1)
-        axs[0].plot(np.diff(tph))
-        axs[0].plot(np.diff(tbpod))
-        axs[0].legend(['ph', 'pbod'])
+    # transform the nph TTL times into bpod times 
+    nph_sync = fcn_nph_to_bpod_times(tph[iph]) 
+    bpod_times = tbpod[ibpod] 
+    bpod_sync = bpod_times
+    bpod_1event_times = tbpod[ibpod]
+    nph_to_bpod = nph_sync
+    fig1, ax = plt.subplots()
 
-        print('max deviation:', np.max(np.abs(fcn_nph_to_bpod_times(tph[iph]) - tbpod[ibpod]) * 1e6), 'drift: ', drift_ppm, 'ppm')
+    ax.set_box_aspect(1)
+    plt.plot(nph_to_bpod, bpod_1event_times) 
+    plt.show()
 
-        #fcn_nph_to_bpod_times  # apply this function to whatever photometry timestamps
+    df_PhotometryData["bpod_frame_times_feedback_times"] = fcn_nph_to_bpod_times(df_PhotometryData["Timestamp"]) 
 
-        axs[1].plot(np.diff(fcn_nph_to_bpod_times(tph[iph])))
-        axs[1].plot(np.diff(tbpod[ibpod]))
-        axs[1].legend(['ph', 'pbod']) 
-        fig.savefig('/home/kceniabougrova/Documents/results_for_OW/'+'Fig00_TTL_'+mouse+'_'+date+'_'+region+'.png')
 
 
 
 
 
 
+    # Assuming nph_sync contains the timestamps in seconds
+    nph_sync_start = nph_sync[0] - 60  # Start time, 100 seconds before the first nph_sync value
+    nph_sync_end = nph_sync[-1] + 60   # End time, 100 seconds after the last nph_sync value
 
+    # Select data within the specified time range
+    selected_data = df_PhotometryData[
+        (df_PhotometryData['bpod_frame_times_feedback_times'] >= nph_sync_start) &
+        (df_PhotometryData['bpod_frame_times_feedback_times'] <= nph_sync_end)
+    ]
 
-        intervals_0_event = np.sort(np.r_[df_trials['intervals_0'].values]) 
-        len(intervals_0_event)
+    # Now, selected_data contains the rows of df_PhotometryData within the desired time range 
+    selected_data 
 
-        # transform the nph TTL times into bpod times 
-        df_PhotometryData = df_nph
-        nph_sync = fcn_nph_to_bpod_times(tph[iph]) 
-        bpod_times = tbpod[ibpod] 
-        bpod_sync = bpod_times
-        bpod_1event_times = tbpod[ibpod]
-        nph_to_bpod = nph_sync
-        fig1, ax = plt.subplots()
+    # Plotting the new filtered data 
+    plt.figure(figsize=(20, 10))
+    plt.plot(selected_data.bpod_frame_times_feedback_times, selected_data[region],color = "#25a18e") 
 
-        ax.set_box_aspect(1)
-        plt.plot(nph_to_bpod, bpod_1event_times) 
-        plt.show()
+    xcoords = nph_sync
+    for xc in zip(xcoords):
+        plt.axvline(x=xc, color='blue',linewidth=0.3)
+    plt.title("Entire signal, raw data")
+    plt.legend(["GCaMP","isosbestic"],frameon=False)
+    sns.despine(left = False, bottom = False) 
+    # plt.axvline(x=init_idx) 
+    # plt.axvline(x=end_idx) 
+    plt.show()
 
-        df_PhotometryData["bpod_frame_times_feedback_times"] = fcn_nph_to_bpod_times(df_PhotometryData["Timestamp"]) 
 
 
 
 
 
+    df_PhotometryData = selected_data
 
 
-        # Assuming nph_sync contains the timestamps in seconds
-        nph_sync_start = nph_sync[0] - 60  # Start time, 100 seconds before the first nph_sync value
-        nph_sync_end = nph_sync[-1] + 60   # End time, 100 seconds after the last nph_sync value
 
-        # Select data within the specified time range
-        selected_data = df_PhotometryData[
-            (df_PhotometryData['bpod_frame_times_feedback_times'] >= nph_sync_start) &
-            (df_PhotometryData['bpod_frame_times_feedback_times'] <= nph_sync_end)
-        ]
 
-        # Now, selected_data contains the rows of df_PhotometryData within the desired time range 
-        selected_data 
 
-        # Plotting the new filtered data 
-        plt.figure(figsize=(20, 10))
-        plt.plot(selected_data.bpod_frame_times_feedback_times, selected_data[region],color = "#25a18e") 
 
-        xcoords = nph_sync
-        for xc in zip(xcoords):
-            plt.axvline(x=xc, color='blue',linewidth=0.3)
-        plt.title("Entire signal, raw data")
-        plt.legend(["GCaMP","isosbestic"],frameon=False)
-        sns.despine(left = False, bottom = False) 
-        # plt.axvline(x=init_idx) 
-        # plt.axvline(x=end_idx) 
-        plt.show()
 
 
 
+    from functions_nm import * 
+    #===========================================================================
+    #      4. FUNCTIONS TO LOAD DATA AND ADD SOME VARIABLES (BEHAVIOR)
+    #===========================================================================
+    df_PhotometryData = df_PhotometryData.reset_index(drop=True)
+    df_PhotometryData = LedState_or_Flags(df_PhotometryData)
 
+    """ 4.1.2 Check for LedState/previous Flags bugs """ 
+    """ 4.1.2.1 Length """
+    # Verify the length of the data of the 2 different LEDs
+    df_470, df_415 = verify_length(df_PhotometryData)
+    """ 4.1.2.2 Verify if there are repeated flags """ 
+    verify_repetitions(df_PhotometryData["LedState"])
+    """ 4.1.3 Remove "weird" data (flag swap, huge signal) """ 
+    session_day=date
+    # plot_outliers(df_470,df_415,region,mouse,session_day) 
 
 
-        df_PhotometryData = selected_data
 
 
 
 
 
 
+    # Select a subset of df_PhotometryData and reset the index
+    df_PhotometryData_1 = df_PhotometryData
 
+    # Remove rows with LedState 1 at both ends if present
+    if df_PhotometryData_1['LedState'].iloc[0] == 1 and df_PhotometryData_1['LedState'].iloc[-1] == 1:
+        df_PhotometryData_1 = df_PhotometryData_1.iloc[1:]
 
+    # Remove rows with LedState 2 at both ends if present
+    if df_PhotometryData_1['LedState'].iloc[0] == 2 and df_PhotometryData_1['LedState'].iloc[-1] == 2:
+        df_PhotometryData_1 = df_PhotometryData_1.iloc[:-2]
 
-        from functions_nm import * 
-        #===========================================================================
-        #      4. FUNCTIONS TO LOAD DATA AND ADD SOME VARIABLES (BEHAVIOR)
-        #===========================================================================
-        df_PhotometryData = df_PhotometryData.reset_index(drop=True)
-        df_PhotometryData = LedState_or_Flags(df_PhotometryData)
+    # Filter data for LedState 2 (470nm)
+    df_470 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 2]
 
-        """ 4.1.2 Check for LedState/previous Flags bugs """ 
-        """ 4.1.2.1 Length """
-        # Verify the length of the data of the 2 different LEDs
-        df_470, df_415 = verify_length(df_PhotometryData)
-        """ 4.1.2.2 Verify if there are repeated flags """ 
-        verify_repetitions(df_PhotometryData["LedState"])
-        """ 4.1.3 Remove "weird" data (flag swap, huge signal) """ 
-        session_day=date
-        # plot_outliers(df_470,df_415,region,mouse,session_day) 
+    # Filter data for LedState 1 (415nm)
+    df_415 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 1]
 
+    # Check if the lengths of df_470 and df_415 are equal
+    assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
 
+    # Plot the data
+    plt.rcParams["figure.figsize"] = (8, 5)
+    plt.plot(df_470[rec.region], c='#279F95', linewidth=0.5)
+    plt.plot(df_415[rec.region], c='#803896', linewidth=0.5)
+    plt.title("Cropped signal, what to use next")
+    plt.legend(["GCaMP", "isosbestic"], frameon=False)
+    sns.despine(left=False, bottom=False)
+    plt.show()
 
+    # Print counts
+    print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
 
 
+    df_PhotometryData = df_PhotometryData_1.reset_index(drop=True)  
+    df_470 = df_PhotometryData[df_PhotometryData.LedState==2] 
+    df_470 = df_470.reset_index(drop=True)
+    df_415 = df_PhotometryData[df_PhotometryData.LedState==1] 
+    df_415 = df_415.reset_index(drop=True) 
+    #================================================
+    """ 4.1.4 FRAME RATE """ 
+    acq_FR = find_FR(df_470["Timestamp"]) 
 
 
 
-        # Select a subset of df_PhotometryData and reset the index
-        df_PhotometryData_1 = df_PhotometryData
 
-        # Remove rows with LedState 1 at both ends if present
-        if df_PhotometryData_1['LedState'].iloc[0] == 1 and df_PhotometryData_1['LedState'].iloc[-1] == 1:
-            df_PhotometryData_1 = df_PhotometryData_1.iloc[1:]
+    raw_reference = df_415[rec.region] #isosbestic 
+    raw_signal = df_470[rec.region] #GCaMP signal 
+    raw_timestamps_bpod = df_470["bpod_frame_times_feedback_times"]
+    raw_timestamps_nph_470 = df_470["Timestamp"]
+    raw_timestamps_nph_415 = df_415["Timestamp"]
+    raw_TTL_bpod = bpod_sync
+    raw_TTL_nph = nph_sync
 
-        # Remove rows with LedState 2 at both ends if present
-        if df_PhotometryData_1['LedState'].iloc[0] == 2 and df_PhotometryData_1['LedState'].iloc[-1] == 2:
-            df_PhotometryData_1 = df_PhotometryData_1.iloc[:-2]
 
-        # Filter data for LedState 2 (470nm)
-        df_470 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 2]
 
-        # Filter data for LedState 1 (415nm)
-        df_415 = df_PhotometryData_1[df_PhotometryData_1['LedState'] == 1]
 
-        # Check if the lengths of df_470 and df_415 are equal
-        assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
 
-        # Plot the data
-        plt.rcParams["figure.figsize"] = (8, 5)
-        plt.plot(df_470[region], c='#279F95', linewidth=0.5)
-        plt.plot(df_415[region], c='#803896', linewidth=0.5)
-        plt.title("Cropped signal, what to use next")
-        plt.legend(["GCaMP", "isosbestic"], frameon=False)
-        sns.despine(left=False, bottom=False)
-        plt.show()
 
-        # Print counts
-        print("470 =", df_470['LedState'].count(), " 415 =", df_415['LedState'].count())
+    my_array = np.c_[raw_timestamps_bpod, raw_reference, raw_signal]
 
+    df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
 
-        df_PhotometryData = df_PhotometryData_1.reset_index(drop=True)  
-        df_470 = df_PhotometryData[df_PhotometryData.LedState==2] 
-        df_470 = df_470.reset_index(drop=True)
-        df_415 = df_PhotometryData[df_PhotometryData.LedState==1] 
-        df_415 = df_415.reset_index(drop=True) 
-        #================================================
-        """ 4.1.4 FRAME RATE """ 
-        acq_FR = find_FR(df_470["Timestamp"]) 
+    df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
 
-
-
-
-        raw_reference = df_415[region] #isosbestic 
-        raw_signal = df_470[region] #GCaMP signal 
-        raw_timestamps_bpod = df_470["bpod_frame_times_feedback_times"]
-        raw_timestamps_nph_470 = df_470["Timestamp"]
-        raw_timestamps_nph_415 = df_415["Timestamp"]
-        raw_TTL_bpod = bpod_sync
-        raw_TTL_nph = nph_sync
-
-
-
-
-
-
-        my_array = np.c_[raw_timestamps_bpod, raw_reference, raw_signal]
-
-        df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
-
-        df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
-
-
-        fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry)
-        fig.savefig('/home/kceniabougrova/Documents/results_for_OW/'+'Fig01_'+mouse+'_'+date+'_'+region+'.png') 
-
+    filepath = (f'/home/kceniabougrova/Documents/results_for_OW/Fig01_{rec.mouse}_{rec.date}_{rec.region}.png') 
+    f'/home/kceniabougrova/Documents/results_for_OW/Fig01_{rec.mouse}_{rec.date}_{rec.region}.png'
+    fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry, event_times=tbpod, output_file=filepath)
 
 # %%
