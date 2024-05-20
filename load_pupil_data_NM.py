@@ -15,15 +15,10 @@ import iblphotometry.dsp
 from brainbox.io.one import SessionLoader
 # import functions_nm 
 import scipy.signal
-
 import ibllib.plots
-
 from one.api import ONE #always after the imports 
 one = ONE()
 
-
-from one.api import ONE
-one = ONE()
 eids = one.search(subject="ZFM-03059") 
 eid = eids[70]
 ref = one.eid2ref(eid)
@@ -165,7 +160,7 @@ one = ONE()
 source_folder = (f"/home/kceniabougrova/Documents/nph/2021-10-14/")
 df_nph = pd.read_csv(source_folder+f"PhotometryData_M1_M4_TCW_S35_14Oct2021.csv") 
 df_nphttl = pd.read_csv(source_folder+f"DI0_M1_M4_TCW_S35_14Oct2021.csv") 
-region = "Rëgion1G"
+region = "Region1G"
 
 
 
@@ -283,6 +278,8 @@ plt.plot(df.times, smoothed_diameter, color='red', linewidth=1.3)
 # Show the plot
 plt.show()
 
+df_pupil = df
+
 
 #%% 
 """ nph """
@@ -336,20 +333,19 @@ axs[1].plot(np.diff(fcn_nph_to_bpod_times(tph[iph])))
 axs[1].plot(np.diff(tbpod[ibpod]))
 axs[1].legend(['ph', 'pbod'])
 df_PhotometryData = df_nph
+
+# transform the nph TTL times into bpod times 
+nph_sync = fcn_nph_to_bpod_times(tph[iph]) 
+bpod_sync = tbpod[ibpod] #same bpod_sync = tbpod
+fig1, ax = plt.subplots()
+ax.set_box_aspect(1)
+plt.plot(nph_sync, bpod_sync) 
+plt.show(block=False)
+plt.close() 
+
 df_PhotometryData["bpod_frame_times_feedback_times"] = fcn_nph_to_bpod_times(df_PhotometryData["Timestamp"])
 
-# # transform the nph TTL times into bpod times 
-# nph_sync = fcn_nph_to_bpod_times(tph[iph]) 
-# bpod_sync = tbpod[ibpod] #same bpod_sync = tbpod
-# fig1, ax = plt.subplots()
-# ax.set_box_aspect(1)
-# plt.plot(nph_sync, bpod_sync) 
-# plt.show(block=False)
-# plt.close()
-
-
 regions=region
-df_PhotometryData["bpod_frame_times_feedback_times"] = fcn_nph_to_bpod_times(df_PhotometryData["Timestamp"]) 
 
 # Assuming nph_sync contains the timestamps in seconds
 nph_sync_start = nph_sync[0] - 30  # Start time, 100 seconds before the first nph_sync value
@@ -421,21 +417,6 @@ assert len(df_470) == len(df_415), "Sync arrays are of different lengths"
 
 
 
-
-# intervals_0_event = np.sort(np.r_[df_trials['intervals_0'].values]) 
-# len(intervals_0_event)
-
-# transform the nph TTL times into bpod times 
-nph_sync = fcn_nph_to_bpod_times(tph[iph]) 
-bpod_sync = tbpod[ibpod] #same bpod_sync = tbpod
-fig1, ax = plt.subplots()
-ax.set_box_aspect(1)
-plt.plot(nph_sync, bpod_sync) 
-plt.show(block=False)
-plt.close()
-
-df_PhotometryData["bpod_frame_times_feedback_times"] = fcn_nph_to_bpod_times(df_PhotometryData["Timestamp"]) 
-
 # Plot the data
 plt.rcParams["figure.figsize"] = (8, 5)
 plt.plot(df_470[regions], c='#279F95', linewidth=0.5)
@@ -472,22 +453,6 @@ df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
 df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
 
 
-
-
-
-
-
-
-
-# %%
-
-
-
-df_pupil = df
-
-df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
-
-df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
 
 #%%
 #run once: 
@@ -533,4 +498,77 @@ ax2.grid(False)
 
 # Show the plot
 plt.show()
+
+
+
+
+
+
+
+
+
+
+# %%
+array_timestamps_bpod = np.array(df.times) #pick the nph timestamps transformed to bpod clock 
+FONTSIZE_1 = 30
+FONTSIZE_2 = 25
+FONTSIZE_3 = 15
+def test_test_test(df_alldata=trials, a="feedback_times", df=df):
+    PERIEVENT_WINDOW = [-1,2] #never to be changed!!! "constant" 
+    SAMPLING_RATE = 15 #not a constant: print(1/np.mean(np.diff(array_timestamps_bpod))) #sampling rate #acq_FR
+    sample_window = np.arange(PERIEVENT_WINDOW[0] * SAMPLING_RATE, PERIEVENT_WINDOW[1] * SAMPLING_RATE + 1)
+    n_trials = df_alldata.shape[0]
+
+    # psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
+    psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials-1))
+
+    event_feedback = np.array(df_alldata[a]) #pick the feedback timestamps 
+    event_feedback = event_feedback[0:len(event_feedback)-1] #KB added 20240327 CHECK WITH OW
+
+    feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback) #check idx where they would be included, in a sorted way 
+
+    psth_idx += feedback_idx
+
+    event_time=15
+    def create_heatmap(data, ax, ax_label, event_time):
+        sns.heatmap(data.T, cbar=False, ax=ax, linewidths=0)
+        ax.axvline(x=event_time, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+        ax.set_xlabel('time since event (s)', fontsize=FONTSIZE_2)
+        ax.set_ylabel(ax_label, fontsize=FONTSIZE_2)
+
+    # Function to create the line plot
+    def create_line_plot(data, ax, event_time):
+        average_values = data.mean(axis=1)
+        ax.plot(average_values, color='black')
+        ax.set_xlabel('time since event (s)', fontsize=FONTSIZE_2)
+        ax.set_ylabel('zdFF', fontsize=FONTSIZE_2)
+        ax.axvline(x=event_time, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+        ax.grid(False)
+
+    # fig, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, gridspec_kw={'height_ratios': [4, 1]}, figsize=(20, 15), sharex=True) 
+    fig, ((ax1), (ax5)) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [4, 1]}, figsize=(6, 12), sharex=True) 
+
+    # create_heatmap(df.raw_isosbestic.values[psth_idx], ax1, 'Raw Isosbestic', event_time)
+    # create_heatmap(df.raw_calcium.values[psth_idx], ax2, 'Raw Calcium', event_time)
+    create_heatmap(df.calcium.values[psth_idx], ax1, 'Calcium', event_time)
+    # create_heatmap(df.zdFF.values[psth_idx], ax4, 'zdFF', event_time)
+
+    # create_line_plot(df.raw_isosbestic.values[psth_idx], ax5, event_time)
+    create_line_plot(df.raw_calcium.values[psth_idx], ax5, event_time)
+    # create_line_plot(df.calcium.values[psth_idx], ax7, event_time)
+    # create_line_plot(df.zdFF.values[psth_idx], ax8, event_time) 
+    # plt.suptitle(a+" "+nm+" "+mouse+" "+date+" "+region+" "+nphfile_number+" "+bncfile_number, fontsize=FONTSIZE_1) 
+    for ax in [ax1, ax5]:
+        ax.tick_params(axis='x', labelsize=FONTSIZE_3)
+        ax.tick_params(axis='y', labelsize=FONTSIZE_3)
+
+    plt.tight_layout()
+    path = '/home/kceniabougrova/Documents/results/figures'
+    # path_fig = 'fig1_'+mouse+'_'+date+'_'+region+'_'+a 
+    # plt.savefig(os.path.join(path, path_fig + '.png')) 
+    # plt.savefig(os.path.join(path, path_fig + '.pdf')) #not really working 
+    plt.show() 
+
+test_test_test(df_alldata=trials, a="feedback_times", df=df) 
+
 # %%

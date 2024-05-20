@@ -35,8 +35,8 @@ df1.date = df1.date.astype(str)
 
 #%%
 """ PHOTOMETRY """ 
-# df_test = df1[(df1.date == "2024-01-24") & (df1.Mouse == "ZFM-06948")] 
-# df_test = df1[(df1.date == "2024-03-22") & (df1.Mouse == "ZFM-06948")]
+# df_test = df1[(df1.date == "2024-01-24") & (df1.mouse == "ZFM-06948")] 
+# df_test = df1[(df1.date == "2024-03-22") & (df1.mouse == "ZFM-06948")]
 
 for i,rec in df1.iterrows(): 
     # if rec.mouse == 'ZFM-06275': #comment (*A)
