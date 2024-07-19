@@ -589,7 +589,6 @@ def list_files_in_folder(path, prefix):
     return [f for f in os.listdir(path) if f.startswith(prefix)]
 
 # Define the path and prefix
-path = '/path/to/your/folder/'  # Update with your actual path
 prefix = 'psthidx_feedback_'
 
 # List files in the folder
