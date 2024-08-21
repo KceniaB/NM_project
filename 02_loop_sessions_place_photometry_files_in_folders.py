@@ -271,7 +271,7 @@ ROOT_DIR = Path("/mnt/h0/kb/data/external_drive")
 one = ONE(cache_dir="/mnt/h0/kb/data/one") 
 
 def get_eid(rec): 
-    eids = one.search(subject=rec.Subject, date=rec.date) 
+    eids = one.search(subject=rec.mouse, date=rec.date) 
     eid = eids[0]
     return eid
 
@@ -336,7 +336,8 @@ mapping = {
 
 # Create the new 'Subject' column by mapping the 'Mouse' column using the dictionary
 df1['Subject'] = df1['Mouse'].map(mapping) 
-df1 = df1.rename(columns={"Mouse": "mouse"})
+df1 = df1.rename(columns={"Mouse": "subject"})
+df1 = df1.rename(columns={"Subject": "mouse"})
 df1 = df1.rename(columns={"Patch cord": "region"})
 
 
