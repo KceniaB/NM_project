@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
 from functions_nm import * 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp
@@ -110,14 +110,14 @@ tbpod = np.sort(np.r_[df_trials['intervals_0'].values, df_trials['intervals_1'].
 
 #%%
 """ from old code """ 
-import neurodsp.utils
+import ibldsp.utils
 try:
     tbpod = np.sort(np.r_[
     df_trials['intervals_0'].values,
     df_trials['intervals_1'].values,
     df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
     )
-    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
     assert len(iph)/len(tbpod) > .9
 except AssertionError:
     print("mismatch in sync, will try to add ITI duration to the sync")
@@ -126,7 +126,7 @@ except AssertionError:
     df_trials['intervals_1'].values - 1,  # here is the trick
     df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
     )
-    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
     assert len(iph)/len(tbpod) > .9
     print("recovered from sync mismatch, continuing")
 
@@ -144,7 +144,7 @@ axs[0].plot(np.diff(tph))
 axs[0].plot(np.diff(tbpod))
 axs[0].legend(['ph', 'pbod'])
 
-fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True)
+fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True)
 
 print('max deviation:', np.max(np.abs(fcn_nph_to_bpod_times(tph[iph]) - tbpod[ibpod]) * 1e6), 'drift: ', drift_ppm, 'ppm')
 

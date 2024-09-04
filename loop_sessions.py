@@ -6,32 +6,31 @@ KceniaB
 Update: 
     Apr17 
         optimized extract_data_info function 
-        
+    2024-June-20 
+        added SessionLoader 
+        one = ONE(directory) to save them there 
+    2024-June-21
+        changed neurodsp to ibldsp 
 """ 
 
-import numpy as np
-import pandas as pd 
-import matplotlib.pyplot as plt 
-import seaborn as sns
-# from functions_nm import load_trials 
-import iblphotometry.kcenia as kcenia 
-import neurodsp.utils 
+import ibldsp.utils 
+import pandas as pd
 from pathlib import Path
 import iblphotometry.plots
-import iblphotometry.dsp 
+# import iblphotometry.dsp 
 from brainbox.io.one import SessionLoader
-# import functions_nm 
 import scipy.signal
-
 import ibllib.plots
-
+from iblphotometry.kcenia import *
 from one.api import ONE #always after the imports 
-one = ONE()
+one = ONE(base_url="/mnt/h0/kb/data/one")
+# one = ONE(base_url="/mnt/h0/kb/data/one", username='kcenia', password='top_secret')
 
 dtype = {'nph_file': int, 'nph_bnc': int, 'region': int}
-df1 = pd.read_excel('/home/kceniabougrova/Downloads/Mice performance tables 100.xlsx' , 'A4_2024',dtype=dtype) 
+# df1 = pd.read_excel('/home/kceniabougrova/Downloads/Mice performance tables 100.xlsx' , 'A4_2024',dtype=dtype) 
+df1 = pd.read_excel('/mnt/h0/kb/Mice performance tables 100.xlsx' , 'A4_2024',dtype=dtype) 
 df1['date'] = pd.to_datetime(df1['date'], format='%Y-%m-%d')
-df1.date = df1.date.astype(str)
+df1.date = df1.date.astype(str) 
 
 #%%
 """ PHOTOMETRY """ 
@@ -43,13 +42,16 @@ for i,rec in df1.iterrows():
     #     # continue #COMMENT (*A)
     # continue
     #get data info
-    regions = kcenia.get_regions(rec)
+    regions = get_regions(rec)
     #get behav
-    eid, df_trials = kcenia.get_eid(rec) 
+    # eid, df_trials = get_eid(rec) 
+    eid, df_trials = get_eid(rec.mouse, rec.date) #KB added 04Aug2024
     #get photometry 
-    df_nph, df_nphttl = kcenia.get_nph(rec)
+    # df_nph, df_nphttl = get_nph(rec) 
+    # df_nph, df_nphttl = get_nph(f"/home/kceniabougrova/Documents/nph/{rec.date}/", rec) #KB added 04Aug2024
+    df_nph, df_nphttl = get_nph(f"/mnt/h0/kb/data/external_drive/{rec.date}/", rec) #KB added 04Aug2024
     #get TTLs 
-    tph, tbpod = kcenia.get_ttl(df_DI0 = df_nphttl, df_trials = df_trials) 
+    tph, tbpod = get_ttl(df_DI0 = df_nphttl, df_trials = df_trials) 
 
     df_PhotometryData = df_nph 
 
@@ -59,7 +61,7 @@ for i,rec in df1.iterrows():
     #     df_trials['intervals_1'].values,
     #     df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
     #     )
-    #     fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    #     fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
     #     assert len(iph)/len(tbpod) > .9
     # except AssertionError:
     #     print("mismatch in sync, will try to add ITI duration to the sync")
@@ -68,7 +70,7 @@ for i,rec in df1.iterrows():
     #     df_trials['intervals_1'].values - 1,  # here is the trick
     #     df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
     #     )
-    #     fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    #     fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
     #     assert len(iph)/len(tbpod) > .9
     #     print("recovered from sync mismatch, continuing") 
     #alternative 
@@ -78,7 +80,7 @@ for i,rec in df1.iterrows():
             df_trials['intervals_1'].values,
             df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
         )
-        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
         assert len(iph)/len(tbpod) > .9
     except AssertionError:
         print("mismatch in sync, will try to add ITI duration to the sync")
@@ -88,13 +90,13 @@ for i,rec in df1.iterrows():
                 df_trials['intervals_1'].values - 1,  # here is the trick
                 df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
             )
-            fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+            fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
             assert len(iph)/len(tbpod) > .9
             print("recovered from sync mismatch, continuing")
         except AssertionError:
             print("mismatch, maybe this is an old session")
-            tbpod = np.sort(np.r_[df_trials['stimOnTrigger_times'].values])
-            fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+            tbpod = np.sort(np.r_[df_trials['stimOnTrigger_times'].values])NM_project/loop_sessions.py
+            fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
             assert len(iph)/len(tbpod) > .9
             print("recovered from sync mismatch, continuing #2")
 
@@ -112,7 +114,7 @@ for i,rec in df1.iterrows():
     axs[1].plot(np.diff(fcn_nph_to_bpod_times(tph[iph])))
     axs[1].plot(np.diff(tbpod[ibpod]))
     axs[1].legend(['ph', 'pbod']) 
-    fig.savefig(f'/home/kceniabougrova/Documents/results_for_OW/Fig00_TTL_{rec.mouse}_{rec.date}_{rec.region}.png')
+    # fig.savefig(f'/home/kceniabougrova/Documents/results_for_OW/Fig00_TTL_{rec.mouse}_{rec.date}_{rec.region}.png')
 
     # intervals_0_event = np.sort(np.r_[df_trials['intervals_0'].values]) 
     # len(intervals_0_event)
@@ -137,6 +139,35 @@ for i,rec in df1.iterrows():
         (df_PhotometryData['bpod_frame_times_feedback_times'] >= nph_sync_start) &
         (df_PhotometryData['bpod_frame_times_feedback_times'] <= nph_sync_end)
     ]
+
+    # #KB ADDED 04Aug2024 
+    # df = pd.DataFrame(selected_data)
+
+    # # Define the window size
+    # window_size = 5
+    # # Apply the median filter
+    # df_filtered = df.rolling(window=window_size, center=True).median()
+    # # Handle edge cases by filling NaN values
+    # df_filtered = df_filtered.fillna(method='ffill').fillna(method='bfill')
+    # print("Original DataFrame:\n", df)
+    # print("\nFiltered DataFrame:\n", df_filtered)
+    
+    # # Function to detect outliers using IQR
+    # def detect_outliers_iqr(df):
+    #     Q1 = df.quantile(0.25)
+    #     Q3 = df.quantile(0.75)
+    #     IQR = Q3 - Q1
+    #     lower_bound = Q1 - 1.5 * IQR
+    #     upper_bound = Q3 + 1.5 * IQR
+    #     outliers = (df < lower_bound) | (df > upper_bound)
+    #     return outliers
+    # # Detect outliers
+    # outliers = detect_outliers_iqr(df)
+    # # Print results
+    # print("Original DataFrame:\n", df)
+    # print("\nOutliers detected (True indicates an outlier):\n", outliers)
+    # #####
+
 
     # Now, selected_data contains the rows of df_PhotometryData within the desired time range 
     selected_data 
@@ -225,18 +256,27 @@ for i,rec in df1.iterrows():
 
     df = pd.DataFrame(my_array, columns=['times', 'raw_isosbestic', 'raw_calcium'])
 
-    df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
+"""
+ADD SAVE THE DATA AT THIS POINT 
+
+
+"""
+
+
+
+
+    # df_photometry = iblphotometry.dsp.baseline_correction_dataframe(df)
 
     filepath = (f'/home/kceniabougrova/Documents/results_for_OW/Fig01_{rec.mouse}_{rec.date}_{rec.region}.png') 
     fig, ax = iblphotometry.plots.plot_raw_data_df(df_photometry, event_times=tbpod, output_file=filepath) 
 
     # pd.read_parquet(f'/home/kceniabougrova/Documents/results_for_OW/demux_nph_{rec.mouse}_{rec.date}_{rec.region}_{eid}.pqt')
     #path lib create folder 
-    df.to_parquet(f'/home/kceniabougrova/Documents/results_for_OW/demux_nph_{rec.mouse}_{rec.date}_{rec.region}_{eid}.pqt')
+    # df.to_parquet(f'/home/kceniabougrova/Documents/results_for_OW/demux_nph_{rec.mouse}_{rec.date}_{rec.region}_{eid}.pqt')
     session_path = one.eid2path(eid)
     path_rp = session_path.joinpath('raw_photometry/')
     path_rp.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path_rp.joinpath(f'demux_nph_{rec.mouse}_{rec.date}_{rec.region}_{eid}.pqt'))
+    # df.to_parquet(path_rp.joinpath(f'demux_nph_{rec.mouse}_{rec.date}_{rec.region}_{eid}.pqt'))
 
 
 
@@ -278,7 +318,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
 from functions_nm import * 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 
@@ -289,7 +329,8 @@ one = ONE()
 # # Read the CSV file
 # df_csv = pd.read_csv(os.path.join(path, path_nph+'.csv'))
 # # Read the Parquet file 
-path = '/home/kceniabougrova/Documents/results_for_OW/' 
+# path = '/home/kceniabougrova/Documents/results_for_OW/' 
+path = '/mnt/h0/kb/data/external_drive' 
 
 # mouse = 'ZFM-04022' 
 # date = '2022-12-30'

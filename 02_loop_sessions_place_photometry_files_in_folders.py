@@ -251,6 +251,7 @@ OLDER SESSIONS
 
 KB
 20240820 
+20240822 
 """ 
 import numpy as np
 import pandas as pd
@@ -302,6 +303,9 @@ def get_ttl(df_DI0):
 
 dtype = {'nph_file': int, 'nph_bnc': int, 'region': int}
 df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables (1).xlsx' , 'todelete',dtype=dtype)
+# df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables .xlsx' , 'todelete',dtype=dtype) 
+df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables (3).xlsx' , 'todelete',dtype=dtype) #M1,M2,M3,M4 
+df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables (4).xlsx' , 'todelete',dtype=dtype) #M1,M2,M3,M4 
 
 # Function to extract date from the bncfile column
 def extract_date_from_bncfile(path):
@@ -317,7 +321,13 @@ def extract_date_from_bncfile(path):
 df1['date'] = df1['bncfile'].apply(extract_date_from_bncfile)
 
 # List of columns to drop
-columns_to_drop = ["Unnamed: 3", "Unnamed: 4", "Unnamed: 5", "Unnamed: 6", "Unnamed: 7"]
+columns_to_drop = ["Unnamed: 3", "Unnamed: 4", "Unnamed: 5", "Unnamed: 6", "Unnamed: 7"] 
+# columns_to_drop = ["Unnamed: 7", "Unnamed: 8", "Unnamed: 9", "Unnamed: 10", "Unnamed: 11"]  
+# columns_to_drop = ["Unnamed: 12", "Unnamed: 8", "Unnamed: 9", "Unnamed: 10", "Unnamed: 11"]
+
+""" M1 M2 M3 M4 """
+df1['date'] = df1['bncfile'].str.extract(r'_(\d{1,2}[A-Za-z]{3}\d{4})/DI')
+df1['date'] = pd.to_datetime(df1['date'], format='%d%b%Y').dt.strftime('%Y-%m-%d')
 
 # Drop the columns
 df1 = df1.drop(columns=columns_to_drop) 
@@ -331,7 +341,12 @@ mapping = {
     "N1": "ZFM-04533",
     "N2": "ZFM-04534",
     "D1": "ZFM-03447",
-    "D2": "ZFM-03448"
+    "D2": "ZFM-03448", 
+    "D3": "ZFM-03450", 
+    "M1": "ZFM-03059",
+    "M2": "ZFM-03062",
+    "M3": "ZFM-03065",
+    "M4": "ZFM-03061"
 }
 
 # Create the new 'Subject' column by mapping the 'Mouse' column using the dictionary
@@ -341,14 +356,20 @@ df1 = df1.rename(columns={"Subject": "mouse"})
 df1 = df1.rename(columns={"Patch cord": "region"})
 
 
-EXCLUDES = [15, 35, 36, 41, 42, 43, 44, 45] #5th 
+EXCLUDES = [15, 35, 36, 41, 42, 43, 44, 45] #5th #most sessions 21June2022-04August2022 
 # 15, 36, 41, 42, 43, 44, 45 - AssertionError: Sync arrays are of different lengths 
-#35 - IndexError: list index out of range
+#35 - IndexError: list index out of range 
+EXCLUDES = [5,14,15,18, 68] #6th #07July2022 29July2022 
+#68 - no region in the file... 
+EXCLUDES = [2, 5, 6, 7, 10, 11, 12, 18, 19, 35, 38, 54, 64, 85, 86, 88, 89, 95, 100, 101, 105, 106, 110, 111, 120, 151, 153, 154, 155, 156, 179, 202, 203, 204, 206, 207, 208, 210, 211, 212, 213, 214, 215, 216, 218, 219, 220, 222, 223, 224]
 
-IMIN = 36 #to start from here when rerunning; from scratch: write 0 
+
+#%%
+EXCLUDES=[9,13,17,28,37,39,40,43,44,49,53,54,55,56,58,69,71,72,99,105,110,112,115,120,139] #7th 28082024
+IMIN = 0 #to start from here when rerunning; from scratch: write 0 
 
 
-
+#%%
 for i,rec in df1.iterrows(): 
     if i < IMIN:
         continue

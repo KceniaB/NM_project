@@ -729,7 +729,7 @@ allContrasts = np.array(df_trials.allContrasts)
 feedbackTypes = np.array(df_trials.feedbackType)
 
 # Set up the subplot figure
-fig, axes = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+fig, axes = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
 
 # Function to process and plot data
 def process_and_plot(contrast_value, ax, title_suffix):
@@ -786,7 +786,7 @@ process_and_plot(0, axes[0], "0")
 process_and_plot(1, axes[1], "1")
 
 # Adjust layout and display the plot
-plt.ylim(-0.0075, 0.0075)
+# plt.ylim(-0.0075, 0.0075)
 plt.tight_layout()
 plt.show() 
 #%% 

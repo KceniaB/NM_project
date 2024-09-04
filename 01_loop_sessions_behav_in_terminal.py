@@ -95,6 +95,31 @@ one = ONE(cache_dir="/mnt/h0/kb/data/one")
 dtype = {'nph_file': int, 'nph_bnc': int, 'region': int}
 df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables (1).xlsx' , 'todelete',dtype=dtype)
 
+# df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables .xlsx' , 'todelete',dtype=dtype) 
+
+df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables (2).xlsx' , 'todelete',dtype=dtype) #20240823 
+df1 = pd.read_excel('/home/ibladmin/Downloads/Mice training tables (4).xlsx' , 'todelete',dtype=dtype) #20240828 
+#for df1 (3)? 
+df1 = df1[76:len(df1.D1)].reset_index(drop=True)
+df1.columns = df1.iloc[0]
+df1 = df1.drop(0)
+df1 = df1.reset_index(drop=True) 
+import pandas as pd
+import re
+# Function to extract and format the date
+def extract_date(file_path):
+    # Find the date in the format ddMmmYYYY
+    match = re.search(r'(\d{2}[A-Za-z]{3}\d{4})', file_path)
+    if match:
+        # Convert to datetime format
+        date_str = match.group(1)
+        date_obj = pd.to_datetime(date_str, format='%d%b%Y')
+        return date_obj.strftime('%Y-%m-%d')
+    return None
+# Apply the function to create the new 'date' column
+df1['date'] = df1['photometryfile'].apply(extract_date)
+
+
 # Function to extract date from the bncfile column
 def extract_date_from_bncfile(path):
     # Split the path by '/' and get the part where the date is located
@@ -109,9 +134,8 @@ def extract_date_from_bncfile(path):
 df1['date'] = df1['bncfile'].apply(extract_date_from_bncfile)
 
 # List of columns to drop
-columns_to_drop = ["Unnamed: 3", "Unnamed: 4", "Unnamed: 5", "Unnamed: 6", "Unnamed: 7"]
-
-# Drop the columns
+columns_to_drop = ["Unnamed: 3", "Unnamed: 4", "Unnamed: 5", "Unnamed: 6", "Unnamed: 7"] 
+# columns_to_drop = ["Unnamed: 7", "Unnamed: 8", "Unnamed: 9", "Unnamed: 10", "Unnamed: 11"]
 df1 = df1.drop(columns=columns_to_drop) 
 
 # Create a mapping dictionary
@@ -123,7 +147,19 @@ mapping = {
     "N1": "ZFM-04533",
     "N2": "ZFM-04534",
     "D1": "ZFM-03447",
-    "D2": "ZFM-03448"
+    "D2": "ZFM-03448", 
+    "D3": "ZFM-03450", 
+    "M1": "ZFM-03059",
+    "M2": "ZFM-03062",
+    "M3": "ZFM-03065",
+    "M4": "ZFM-03061"
+}
+
+mapping = {
+    "M1": "ZFM-03059",
+    "M2": "ZFM-03062",
+    "M3": "ZFM-03065",
+    "M4": "ZFM-03061"
 }
 
 # Create the new 'Subject' column by mapping the 'Mouse' column using the dictionary

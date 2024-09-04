@@ -1142,6 +1142,7 @@ plt.axvline(x=30)
 """ WORKS - ALL PHOTOMETRY PQT FILES INTO 1 FOLDER 07Aug2024 """
 """ WORKS, WITH PLOTS """
 from iblphotometry.preprocessing import jove2019, psth, preprocess_sliding_mad, photobleaching_lowpass 
+from brainbox.io.one import SessionLoader
 
 df_goodsessions = pd.read_csv('/home/ibladmin/Downloads/Mice_GOOD_sorted.csv')
 df_goodsessions['Date'] = pd.to_datetime(df_goodsessions['Date'], format='%m/%d/%Y')
@@ -1181,6 +1182,7 @@ for i in range(len(df_gs)):
     
     df_ph_entire_signal = df_ph
     test=df_ph_entire_signal
+    fs = 1 / test.times.median()
     test['calcium_photobleach'] = photobleaching_lowpass(df_ph_entire_signal["raw_calcium"].values, fs=fs) #KB
     test['isosbestic_photobleach'] = photobleaching_lowpass(df_ph_entire_signal["raw_isosbestic"], fs=fs)
     test['calcium_jove2019'] = jove2019(df_ph_entire_signal["raw_calcium"], df_ph_entire_signal["raw_isosbestic"], fs=fs) 
@@ -1563,3 +1565,5 @@ ax4.legend(fontsize=14)
 fig.suptitle(f"{mouse}_{date}_{region}", fontsize=18)
 plt.tight_layout(rect=[0, 0, 1, 0.96])
 plt.show()
+
+# %%
