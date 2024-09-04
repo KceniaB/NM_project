@@ -173,7 +173,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
 from functions_nm import * 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 
@@ -1263,7 +1263,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
 from functions_nm import * 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 
@@ -1427,7 +1427,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
 from functions_nm import * 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 
@@ -1666,7 +1666,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
 from functions_nm import * 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 

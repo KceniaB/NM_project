@@ -8,7 +8,7 @@ from scipy.signal import convolve
 import seaborn as sns
 # from functions_nm import load_trials 
 import iblphotometry.kcenia as kcenia 
-import neurodsp.utils 
+import ibldsp.utils 
 from pathlib import Path
 import iblphotometry.plots
 import iblphotometry.dsp 
@@ -303,7 +303,7 @@ try:
         df_trials['intervals_1'].values,
         df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
     )
-    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+    fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
     assert len(iph)/len(tbpod) > .9
 except AssertionError:
     print("mismatch in sync, will try to add ITI duration to the sync")
@@ -313,13 +313,13 @@ except AssertionError:
             df_trials['intervals_1'].values - 1,  # here is the trick
             df_trials.loc[df_trials['feedbackType'] == 1, 'feedback_times'].values]
         )
-        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
         assert len(iph)/len(tbpod) > .9
         print("recovered from sync mismatch, continuing")
     except AssertionError:
         print("mismatch, maybe this is an old session")
         tbpod = np.sort(np.r_[df_trials['stimOnTrigger_times'].values])
-        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = neurodsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
+        fcn_nph_to_bpod_times, drift_ppm, iph, ibpod = ibldsp.utils.sync_timestamps(tph, tbpod, return_indices=True) 
         assert len(iph)/len(tbpod) > .9
         print("recovered from sync mismatch, continuing #2")
 
