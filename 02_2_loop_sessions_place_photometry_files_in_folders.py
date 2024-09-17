@@ -4,7 +4,7 @@
 KceniaB 
 
 Update: 
-
+    pick all new and old sessions from 2 different sheets in the excel and join them in 1 df
         
 """ 
 
@@ -17,7 +17,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 # from functions_nm import load_trials 
-import iblphotometry.kcenia as kcenia
+import kcenia as kcenia #added 16092024, works, it seems? 
+# import iblphotometry.kcenia as kcenia
 import ibldsp.utils
 from pathlib import Path
 # import iblphotometry.plots
@@ -40,8 +41,6 @@ df1 = pd.read_excel('/mnt/h0/kb/Mice performance tables 100.xlsx' , 'A4_2024',dt
 df1['date'] = pd.to_datetime(df1['date'], format='%Y-%m-%d')
 df1.date = df1.date.astype(str) 
 
-df2 = df1[0:5] 
-
 def get_eid(rec): 
     eids = one.search(subject=rec.mouse, date=rec.date) 
     eid = eids[0]
@@ -57,28 +56,27 @@ def get_nph(source_path, rec):
     df_nph = pd.read_csv(source_folder+f"raw_photometry{rec.nph_file}.csv") 
     return df_nph  
 
+
+# ######################### 2nd loop, for the older sessions KB 16092024 
+# # Load the CSV file
+# df_goodsessions = pd.read_csv('/mnt/h0/kb/Mice performance tables 100 2.csv')
+
+# # Convert 'nph_file' to integers, keeping NaN values
+# df_goodsessions['nph_file'] = pd.to_numeric(df_goodsessions['nph_file'], errors='coerce').astype('Int64')
+
+# # Ensure the 'date' column is in the yyyy-mm-dd format
+# df1['date'] = pd.to_datetime(df1['date'], format='%Y-%m-%d').dt.date
+
+# df_goodsessions['Date'] = df_goodsessions.date
+# df_goodsessions['Mouse'] = df_goodsessions.mouse
+
+# df1 = df_goodsessions
+
+##########################################################
+
+
 #%%
-# EXCLUDES = [66,166, 215, 294, 360, 361, 362] #1st loop 
-#294 - AssertionError: drift is more than 100 ppm 
-#360 - KeyError: "None of [Index(['Region2G'], dtype='object')] are in the [columns]"
-#361 - KeyError: "None of [Index(['Region2G'], dtype='object')] are in the [columns]"
-#362 - KeyError: "None of [Index(['Region2G'], dtype='object')] are in the [columns]" 
-#66 nph file is 3G (in this loop?) 
-
-# EXCLUDES = [2, 4, 6, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 29, 84, 95, 141, 147] #2nd loop 
-#2 - ValueError: zero-size array to reduction operation minimum which has no identity
-#4, 6 - AssertionError: drift is more than 100 ppm
-#13, 14, 15, ..., 23, 29 - FileNotFoundError: [Errno 2] No such file or directory: '/mnt/h0/kb/data/external_drive/2022-08-04/raw_photometry0.csv'
-#84 - ValueError: zero-size array to reduction operation minimum which has no identity
-#95 - FileNotFoundError: [Errno 2] No such file or directory: '/mnt/h0/kb/data/external_drive/2022-11-22/raw_photometry1.csv'
-#141, 147 - FileNotFoundError: [Errno 2] No such file or directory: '/mnt/h0/kb/data/external_drive/2022-12-24/raw_photometry3.csv'
-
-# EXCLUDES = [] #3rd
-
-EXCLUDES = [166, 367, 369, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 392, 453, 499, 504] #4th 
-# 166, 367, 369 - AssertionError: drift is more than 100 ppm
-# 376 (...) check the excluded ones, 453, 499 - FileNotFoundError: [Errno 2] No such file or directory: '/mnt/h0/kb/data/external_drive/2022-08-04/raw_photometry0.csv'
-
+EXCLUDES = [] 
 IMIN = 0 #to start from here when rerunning; from scratch: write 0 
 for i,rec in df1.iterrows(): 
     if i < IMIN:
@@ -127,8 +125,8 @@ for i,rec in df1.iterrows():
 
 
     # Assuming tph contains the timestamps in seconds
-    tbpod_start = tbpod[0] - 30  # Start time, 100 seconds before the first tph value
-    tbpod_end = tbpod[-1] + 30   # End time, 100 seconds after the last tph value
+    tbpod_start = tbpod[0] - 10  # Start time, 100 seconds before the first tph value
+    tbpod_end = tbpod[-1] + 10   # End time, 100 seconds after the last tph value
 
     # Select data within the specified time range
     selected_data = df_ph[

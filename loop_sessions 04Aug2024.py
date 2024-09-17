@@ -1172,7 +1172,8 @@ for i in range(len(df_gs)):
     print(f"i | {mouse} | {date} | {region} | {eid}")
     
     sl = SessionLoader(one=one, eid=eid) 
-    file_photometry = sl.session_path.joinpath("alf", region, "raw_photometry.pqt")
+    # file_photometry = sl.session_path.joinpath("alf", region, "raw_photometry.pqt") #KB commented 11Sep2024
+    file_photometry = session_path_nph+"alf/"+region+"/raw_photometry.pqt" #KB added 11Sep2024
     df_ph = pd.read_parquet(file_photometry) 
     print(df_ph)
     new_file_name = f"nph_{mouse}_{date}_{region}.pqt"
@@ -1182,7 +1183,8 @@ for i in range(len(df_gs)):
     
     df_ph_entire_signal = df_ph
     test=df_ph_entire_signal
-    fs = 1 / test.times.median()
+    # fs = 1 / test.times.median() #KB commented 11Sep2024
+    fs = (1 / np.median(np.diff(test.times.values))) #KB added 11Sep2024
     test['calcium_photobleach'] = photobleaching_lowpass(df_ph_entire_signal["raw_calcium"].values, fs=fs) #KB
     test['isosbestic_photobleach'] = photobleaching_lowpass(df_ph_entire_signal["raw_isosbestic"], fs=fs)
     test['calcium_jove2019'] = jove2019(df_ph_entire_signal["raw_calcium"], df_ph_entire_signal["raw_isosbestic"], fs=fs) 
@@ -1193,8 +1195,8 @@ for i in range(len(df_gs)):
     df_ph_entire_signal.to_parquet(new_file_path)
 
     df_ph_crop = df_ph
-    trial_start = df_trials["intervals_0"].iloc[0] - 30
-    trial_end = df_trials["intervals_1"].iloc[-1] + 30
+    trial_start = df_trials["intervals_0"].iloc[0] - 10 #KB changed from 30 to 10 11Sep2024 
+    trial_end = df_trials["intervals_1"].iloc[-1] + 10
     selected_df_nph = df_ph_crop[(df_ph_crop["times"] >= trial_start) & (df_ph_crop["times"] <= trial_end)]
     selected_df_nph.to_parquet(new_file_path2)
 
@@ -1306,7 +1308,8 @@ for i in range(len(df_gs)):
     print(f"i | {mouse} | {date} | {region} | {eid}")
     
     sl = SessionLoader(one=one, eid=eid) 
-    file_photometry = sl.session_path.joinpath("alf", region, "raw_photometry.pqt")
+    # file_photometry = sl.session_path.joinpath("alf", region, "raw_photometry.pqt") #KB commented 11Sep2024
+    file_photometry = session_path_nph+"alf/"+region+"/raw_photometry.pqt" #KB added 11Sep2024
     df_ph = pd.read_parquet(file_photometry) 
     print(df_ph)
     new_file_name = f"nph_{mouse}_{date}_{region}.pqt"
@@ -1326,8 +1329,8 @@ for i in range(len(df_gs)):
     df_ph_entire_signal.to_parquet(new_file_path)
 
     df_ph_crop = df_ph
-    trial_start = df_trials["intervals_0"].iloc[0] - 30
-    trial_end = df_trials["intervals_1"].iloc[-1] + 30
+    trial_start = df_trials["intervals_0"].iloc[0] - 10
+    trial_end = df_trials["intervals_1"].iloc[-1] + 10
     selected_df_nph = df_ph_crop[(df_ph_crop["times"] >= trial_start) & (df_ph_crop["times"] <= trial_end)]
     selected_df_nph = selected_df_nph.reset_index(drop=True)
     selected_df_nph.to_parquet(new_file_path2)
@@ -1351,6 +1354,9 @@ for i in range(len(df_gs)):
 
     df_trials_400 = df_trials[0:401] 
     n_trials_400 = df_trials_400.shape[0] 
+
+    df_trials_90 = df_trials[0:91] 
+    n_trials_90 = df_trials_90.shape[0] 
 
     psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
 
@@ -1379,6 +1385,19 @@ for i in range(len(df_gs)):
     photometry_feedback_avg_400 = np.mean(photometry_feedback_400, axis=1)
     # plt.plot(photometry_feedback_avg) 
 
+
+    psth_idx_90 = np.tile(sample_window[:,np.newaxis], (1, n_trials_90)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
+
+    event_feedback_90 = np.array(df_trials_90[EVENT_NAME]) #pick the feedback timestamps 
+
+    feedback_idx_90 = np.searchsorted(nph_times, event_feedback_90) #check idx where they would be included, in a sorted way 
+
+    psth_idx_90 += feedback_idx_90
+
+    photometry_feedback_90 = selected_df_nph.calcium_jove2019.values[psth_idx_90] 
+
+    photometry_feedback_avg_90 = np.mean(photometry_feedback_90, axis=1)
+    # plt.plot(photometry_feedback_avg) 
 
 
     import os
