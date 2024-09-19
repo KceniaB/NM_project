@@ -24,3 +24,4 @@ plot_per_NM_V2_allsessionsinone - also important; has plots per mouse, divided b
 
 Z_10Sep2024_sessionsuntil90trials - divides session into parts; plots correct, incorrect, easy and difficult contrasts 
 
+05 to plot individual sessions from full list
