@@ -211,7 +211,7 @@ for i in range(len(test_01)):
 
         fig.suptitle(f'preprocess_{mouse}_{date}_{region}_{eid}', y=1, fontsize=14)
         plt.tight_layout()
-        plt.savefig(f'/mnt/h0/kb/data/psth_npy/Fig_01_preprocess_{mouse}_{date}_{region}_{eid}.png')
+        plt.savefig(f'/mnt/h0/kb/data/psth_npy/Fig_01_preprocess_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
         plt.show()
 
 
@@ -305,7 +305,7 @@ for i in range(len(test_01)):
 
         fig.suptitle(f'calcium_mad_{mouse}_{date}_{region}_{eid}', y=1, fontsize=14)
         plt.tight_layout()
-        plt.savefig(f'/mnt/h0/kb/data/psth_npy/Fig02_{mouse}_{date}_{region}_{eid}.png')
+        plt.savefig(f'/mnt/h0/kb/data/psth_npy/Fig02_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
         plt.show()
 
 

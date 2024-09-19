@@ -653,16 +653,18 @@ for mouse, sessions in mice_sessions:
 
     # Initialize variables to track the global y-limits across all sessions for this mouse
     global_ymin, global_ymax = np.inf, -np.inf
-
     # Step 1: Calculate the global y-limits (min/max) for all sessions of this mouse
     for plot_index in range(num_plots):
         start_index = plot_index * sessions_per_plot
         end_index = min(start_index + sessions_per_plot, num_sessions)
         current_sessions = sessions.iloc[start_index:end_index]
+        current_sessions['date'] = pd.to_datetime(current_sessions['date'], errors='coerce')   
 
         for i, row in current_sessions.iterrows():
             try:
-                date = row['Date'].strftime('%Y-%m-%d')
+                if pd.notna(row['date']):  # Check if the date is valid
+                    date = row['date'].strftime('%Y-%m-%d')
+                    print(date)
                 region = row['region']
                 eid, df_trials = get_eid(mouse, date)
                 nm = row['NM']
@@ -763,12 +765,13 @@ for mouse, sessions in mice_sessions:
         fig, axes = plt.subplots(4, 4, figsize=(18, 16))  # Adjust figure size for 4 rows
 
         # Set the main title
-        fig.suptitle(f"Mouse = {mouse} (Session Group {plot_index + 1}) NM = {nm} All Conditions", fontsize=16)
+        fig.suptitle(f"Mouse = {mouse} (Session Group {plot_index + 1}) All Conditions", fontsize=16)
 
         # Define session indices for the current plot
         start_index = plot_index * sessions_per_plot
         end_index = min(start_index + sessions_per_plot, num_sessions)
         current_sessions = sessions.iloc[start_index:end_index]
+        current_sessions['date'] = pd.to_datetime(current_sessions['date'], errors='coerce')   
 
         # Discretize the colormap
         cmap = plt.get_cmap('viridis', sessions_per_plot)  # Get the desired number of colors
@@ -779,7 +782,9 @@ for mouse, sessions in mice_sessions:
         # Loop over the sessions for this mouse and plot each session
         for session_idx, (i, row) in enumerate(current_sessions.iterrows()):
             try:
-                date = row['Date'].strftime('%Y-%m-%d')
+                if pd.notna(row['date']):  # Check if the date is valid
+                    date = row['date'].strftime('%Y-%m-%d')
+                    print(date)
                 region = row['region']
                 eid, df_trials = get_eid(mouse, date)
 
@@ -884,7 +889,7 @@ for mouse, sessions in mice_sessions:
         plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the layout to make room for the legend
 
         filename = f"mouse_{mouse}_session_group_{plot_index + 1}_all_conditions.png"
-        # plt.savefig(filename, bbox_inches='tight')  # Save with tight bounding box to avoid clipping
+        plt.savefig(filename, bbox_inches='tight')  # Save with tight bounding box to avoid clipping
 
         plt.show()
         # Close the figure to release memory
@@ -892,8 +897,7 @@ for mouse, sessions in mice_sessions:
 print(EXCLUDES)
 
 
-################################################################################################
-
+################################################################################################ 
 
 
 
