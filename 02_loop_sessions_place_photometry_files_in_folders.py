@@ -28,7 +28,9 @@ import ibllib.plots
 from one.api import ONE #always after the imports 
 # one = ONE()
 ROOT_DIR = Path("/mnt/h0/kb/data/external_drive")
-one = ONE(cache_dir="/mnt/h0/kb/data/one")
+# one = ONE(cache_dir="/mnt/h0/kb/data/one")
+one = ONE(cache_rest=None, mode='remote') #new 17Dec2024 works to load the trials table from ephysCW sessions 
+
 
 #%%
 """
@@ -269,7 +271,9 @@ import ibllib.plots
 from one.api import ONE #always after the imports 
 # one = ONE()
 ROOT_DIR = Path("/mnt/h0/kb/data/external_drive")
-one = ONE(cache_dir="/mnt/h0/kb/data/one") 
+# one = ONE(cache_dir="/mnt/h0/kb/data/one") 
+one = ONE(cache_rest=None, mode='remote') #new 17Dec2024 works to load the trials table from ephysCW sessions 
+
 
 def get_eid(rec): 
     eids = one.search(subject=rec.mouse, date=rec.date) 
@@ -371,8 +375,8 @@ nm_mapping = {
 } 
 
 # Map the NM and subject to each mouse
-df1['NM'] = df1['mouse'].map(nm_mapping)
-df1['Subject'] = df1['mouse'].map(mapping) 
+df1['NM'] = df1['Mouse'].map(nm_mapping)
+df1['Subject'] = df1['Mouse'].map(mapping) 
 
 
 # Create the new 'Subject' column by mapping the 'Mouse' column using the dictionary

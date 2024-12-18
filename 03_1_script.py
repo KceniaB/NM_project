@@ -4,7 +4,7 @@
 from one.api import ONE
 from pathlib import Path
 from generator import Generator, make_data_js
-one = one = ONE(cache_dir="/mnt/h0/kb/data/one")
+one = ONE(cache_dir="/mnt/h0/kb/data/one")
 SAVE_PATH = Path("/mnt/h0/kb/viz_figures_tests")
 SAVE_PATH.mkdir(exist_ok=True, parents=True)
 

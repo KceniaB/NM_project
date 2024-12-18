@@ -74,6 +74,130 @@ EXCLUDES = [0,1,10,12,15,21,25,52,59,78,90,97,107,115,116,145,151,166,167,168,16
 
 IMIN = 0
 
+
+#%% 
+""" 
+last time I used - to add more data 18122024
+02_2_loop_sessions... 
+""" 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+# from functions_nm import load_trials 
+# import iblphotometry.kcenia as kcenia
+import ibldsp.utils
+from pathlib import Path
+# import iblphotometry.plots
+# import iblphotometry.dsp
+from brainbox.io.one import SessionLoader 
+import scipy.signal
+import ibllib.plots
+from one.api import ONE #always after the imports 
+# one = ONE()
+ROOT_DIR = Path("/mnt/h0/kb/data/external_drive")
+one = ONE(cache_dir="/mnt/h0/kb/data/one") 
+
+def get_eid(rec): 
+    eids = one.search(subject=rec.mouse, date=rec.date) 
+    eid = eids[0]
+    return eid
+
+def get_regions(rec): 
+    regions = [f"Region{rec.region}G"] 
+    return regions 
+
+def get_nph(rec): 
+    df_nph = pd.read_csv(rec.photometryfile) 
+    df_nphttl = pd.read_csv(rec.bncfile) 
+    return df_nph, df_nphttl 
+
+def get_ttl(df_DI0): 
+    if 'Value.Value' in df_DI0.columns: #for the new ones
+        df_DI0 = df_DI0.rename(columns={"Value.Seconds": "Seconds", "Value.Value": "Value"})
+    elif 'Timestamp' in df_DI0.columns: 
+        df_DI0["Timestamp"] = df_DI0["Timestamp"] #for the old ones #KB added 20082024
+    else:
+        df_DI0["Timestamp"] = df_DI0["Seconds"] #for the old ones
+    #use Timestamp from this part on, for any of the files
+    raw_phdata_DI0_true = df_DI0[df_DI0.Value==True]
+    df_raw_phdata_DI0_T_timestamp = pd.DataFrame(raw_phdata_DI0_true, columns=["Timestamp"])
+    # raw_phdata_DI0_true = pd.DataFrame(df_DI0.Timestamp[df_DI0.Value==True], columns=['Timestamp'])
+    df_raw_phdata_DI0_T_timestamp = df_raw_phdata_DI0_T_timestamp.reset_index(drop=True) 
+    tph = df_raw_phdata_DI0_T_timestamp.values[:, 0] 
+    return tph 
+
+# Get the list of good sessions and their info 
+df_goodsessions = pd.read_csv('/home/ibladmin/Downloads/Mice_GOOD_sorted.csv') 
+# df_goodsessions['Date'] = pd.to_datetime(df_goodsessions['Date'], format='%m/%d/%Y')
+# # Convert rows 0 to 249
+df_goodsessions.loc[:249, 'Date'] = pd.to_datetime(df_goodsessions.loc[:249, 'Date'], format='%m/%d/%Y')
+# # Convert the rest of the rows
+df_goodsessions.loc[250:, 'Date'] = pd.to_datetime(df_goodsessions.loc[250:, 'Date'])
+df1 = df_goodsessions
+
+""" M1 M2 M3 M4 """
+df1['date'] = pd.to_datetime(df1['Date'], format='%d%b%Y').dt.strftime('%Y-%m-%d')
+
+
+
+# Create a mapping dictionary
+mapping = {
+    "S5": "ZFM-04392",
+    "D5": "ZFM-04019",
+    "D6": "ZFM-04022",
+    "D4": "ZFM-04026",
+    "N1": "ZFM-04533",
+    "N2": "ZFM-04534",
+    "D1": "ZFM-03447",
+    "D2": "ZFM-03448", 
+    "D3": "ZFM-03450", 
+    "M1": "ZFM-03059",
+    "M2": "ZFM-03062",
+    "M3": "ZFM-03065",
+    "M4": "ZFM-03061", 
+    "ZFM-02128": "ZFM-02128"  
+}
+
+# OTHER MAPPING 
+# Create the mapping for both NM and subject
+nm_mapping = {
+    "S5": "5-HT",
+    "D5": "DA",
+    "D6": "DA",
+    "D4": "DA",
+    "N1": "NE",
+    "N2": "NE",
+    "D1": "DA",
+    "D2": "DA",
+    "D3": "DA",
+    "M1": "5-HT",
+    "M2": "5-HT",
+    "M3": "5-HT",
+    "M4": "5-HT", 
+    "ZFM-02128": "ZFM-02128"
+} 
+
+# Map the NM and subject to each mouse
+df1['NM'] = df1['Mouse'].map(nm_mapping)
+df1['Subject'] = df1['Mouse'].map(mapping) 
+
+
+# Create the new 'Subject' column by mapping the 'Mouse' column using the dictionary
+df1['Subject'] = df1['Mouse'].map(mapping) 
+df1 = df1.rename(columns={"Mouse": "subject"})
+df1 = df1.rename(columns={"Subject": "mouse"})
+df1 = df1.rename(columns={"Patch cord": "region"})
+
+test_01 = df1
+
+
+
+
+
+
+
+
 #%% 
 exclude=[]
 for i in range(len(test_01)): 
@@ -83,8 +207,8 @@ for i in range(len(test_01)):
         if i in EXCLUDES:
             continue
 
-        EVENT = "feedback_times"
-        mouse = test_01.mouse[i] 
+        EVENT = "feedback_times" #done for stimOnTrigger_times and firstMovement_times as well 
+        mouse = test_01.Mouse[i] 
         date = test_01.date[i]
         if isinstance(date, pd.Timestamp):
             date = date.strftime('%Y-%m-%d')
@@ -93,20 +217,43 @@ for i in range(len(test_01)):
         # print(f"{mouse} | {date} | {region} | {eid}")
         region = f'Region{region}G'
         eid, df_trials = get_eid(mouse,date)
-        try: 
-            nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/001/alf/{region}/raw_photometry.pqt'
-            df_nph = pd.read_parquet(nph_path)
-        except:
+        # try: 
+        #     nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/001/alf/{region}/raw_photometry.pqt'
+        #     df_nph = pd.read_parquet(nph_path)
+        # except:
+        #     try:
+        #         nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/002/alf/{region}/raw_photometry.pqt'
+        #         df_nph = pd.read_parquet(nph_path)
+        #     except:
+        #         try:
+        #             nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/003/alf/{region}/raw_photometry.pqt'
+        #             df_nph = pd.read_parquet(nph_path)
+        #         except:
+        #             print(f"Could not find raw_photometry.pqt in paths 001, 002, or 003 for mouse {mouse} on date {date}")
+        #             df_nph = None  # Optionally set df_nph to None or handle it appropriately
+
+
+
+        df_nph = None  # Initialize df_nph
+        found = False  # Flag to indicate if file is found
+
+        for i in range(1, 100):  # Loop over a reasonable range, e.g., 1 to 99
+            nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/{i:03}/alf/{region}/raw_photometry.pqt'
             try:
-                nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/002/alf/{region}/raw_photometry.pqt'
                 df_nph = pd.read_parquet(nph_path)
-            except:
-                try:
-                    nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/003/alf/{region}/raw_photometry.pqt'
-                    df_nph = pd.read_parquet(nph_path)
-                except:
-                    print(f"Could not find raw_photometry.pqt in paths 001, 002, or 003 for mouse {mouse} on date {date}")
-                    df_nph = None  # Optionally set df_nph to None or handle it appropriately
+                found = True  # File found
+                break
+            except FileNotFoundError:
+                continue  # Try the next number
+
+        if not found:
+            print(f"Could not find raw_photometry.pqt in any 00X path for mouse {mouse} on date {date}")
+            df_nph = None  # Optionally handle if not found
+
+
+
+
+
 
         
         df_nph["mouse"] = mouse
@@ -234,10 +381,11 @@ for i in range(len(test_01)):
         n_trials = df_trials.shape[0]
 
         psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) #KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
-
+        # psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials-1)) #KB added -1 18Dec2024
         event_feedback = np.array(df_trials[EVENT]) #pick the feedback timestamps 
 
         feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback) #check idx where they would be included, in a sorted way 
+        # feedback_idx = feedback_idx[0:len(feedback_idx)-1] #KB added 18Dec2024
 
         psth_idx += feedback_idx
 
@@ -261,6 +409,7 @@ for i in range(len(test_01)):
         photometry_feedback_6 = df_nph.isosbestic_mad.values[psth_idx] 
         np.save(f'/mnt/h0/kb/data/psth_npy/preprocess_isosbestic_mad_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_feedback_6)
 
+        # df_trials = df_trials[0:len(df_trials)-1]
         psth_good = df_nph.calcium_mad.values[psth_idx[:,(df_trials.feedbackType == 1)]]
         psth_error = df_nph.calcium_mad.values[psth_idx[:,(df_trials.feedbackType == -1)]]
 
@@ -412,6 +561,42 @@ for i in range(len(test_01)):
         print(f"done: {EVENT}_{mouse}_{date}_{region}_{eid}") 
     except: 
         exclude.append(i)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1165,7 +1350,8 @@ for nph_index, nph in enumerate(nph_list, start=1):
 metadata = [
     {"mouse": mouse, "session": date, "nm": "DA", "region": region},
     {"mouse": "ZFM-05236", "session": "2023-07-03", "nm": "5HT", "region": "Region4G"}
-]hallo mein name ist georg rasiser
+]
+# hallo mein name ist georg rasiser #??????????? not commented, after the code in the line above
     # Process the calcium signal and add to df  
     nph_j = preprocess_sliding_mad(data["raw_calcium"].values, data["times"].values, fs=fs)
     data["calcium"] = nph_j
@@ -1204,7 +1390,8 @@ for i in range(1, len(behav_list) + 1):
 
     psth_idx = np.tile(sample_window[:, np.newaxis], (1, n_trials))  # KB commented 20240327 BUT USE THIS ONE; CHECK WITH OW 
 
-    event_feedback = np.array(df_trials[hhhjjgjhghghguuyyhhxxxzz])  # pick the feedback timestamps 
+    # event_feedback = np.array(df_trials[hhhjjgjhghghguuyyhhxxxzz])  # pick the feedback timestamps 
+    event_feedback = np.array(df_trials[EVENT_NAME]) #pick the feedback timestamps 
 
     feedback_idx = np.searchsorted(array_timestamps_bpod, event_feedback)  # check idx where they would be included, in a sorted way 
 

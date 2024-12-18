@@ -35,7 +35,8 @@ import seaborn as sns
 from ibldsp.utils import parabolic_max 
 from iblphotometry.preprocessing import jove2019, psth, preprocess_sliding_mad, photobleaching_lowpass 
 from one.api import ONE #always after the imports 
-one = ONE(cache_dir="/mnt/h0/kb/data/one") 
+# one = ONE(cache_dir="/mnt/h0/kb/data/one") 
+one = ONE(cache_rest=None, mode='remote') #new 17Dec2024 works to load the trials table from ephysCW sessions 
 
 #functions 
 def get_eid(mouse,date): 
@@ -48,22 +49,173 @@ def get_eid(mouse,date):
         # Try to load the trials directly
         a = one.load_object(eid, 'trials')
         trials = a.to_df()
+        trials['trialNumber'] = range(1, len(trials) + 1) 
+        trials["mouse"] = mouse
+        trials["date"] = date
+        trials["region"] = region
+        trials["eid"] = eid 
+        df_trials=trials
+
+        # create allContrasts 
+        idx = 2
+        new_col = df_trials['contrastLeft'].fillna(df_trials['contrastRight']) 
+        df_trials.insert(loc=idx, column='allContrasts', value=new_col) 
+        # create allSContrasts 
+        df_trials['allSContrasts'] = df_trials['allContrasts']
+        df_trials.loc[df_trials['contrastRight'].isna(), 'allSContrasts'] = df_trials['allContrasts'] * -1
+        df_trials.insert(loc=3, column='allSContrasts', value=df_trials.pop('allSContrasts'))
+        # create reactionTime
+        reactionTime = np.array((df_trials["firstMovement_times"])-(df_trials["stimOnTrigger_times"]))
+        df_trials["reactionTime"] = reactionTime 
+    
+        try: 
+            dataset_task_settings = one.load_dataset(eid, '_iblrig_taskSettings.raw.json')  
+            values = dataset_task_settings.get('LEN_BLOCKS', 'Key not found') 
+            # values gives the block length 
+            # example for eid = 'be3208c9-43de-44dc-bdc6-ff8963464f98'
+            # [90, 27, 82, 50, 30, 30, 31, 78, 64, 83, 24, 42, 74, 72, 34, 41, 52, 56, 68, 39, 45, 88, 37, 35, 29, 69, 85, 52, 37, 78, 80, 28, 68, 95, 34, 36, 42] 
+
+            values_sum = np.cumsum(values) 
+
+            # Initialize a new column 'probL' with NaN values
+            df_trials['probL'] = np.nan
+
+            # Set the first block (first `values_sum[0]` rows) to 0.5
+            df_trials.loc[:values_sum[0]-1, 'probL'] = 0.5 
+
+
+            df_trials.loc[values_sum[0]:values_sum[1]-1, 'probL'] = df_trials.loc[values_sum[0], 'probabilityLeft']
+
+            previous_value = df_trials.loc[values_sum[1]-1, 'probabilityLeft'] 
+
+
+            # Iterate over the blocks starting from values_sum[1]
+            for i in range(1, len(values_sum)-1):
+                print("i = ", i)
+                start_idx = values_sum[i]
+                end_idx = values_sum[i+1]-1
+                print("start and end _idx = ", start_idx, end_idx)
+                
+                # Assign the block value based on the previous one
+                if previous_value == 0.2:
+                    current_value = 0.8
+                else:
+                    current_value = 0.2
+                print("current value = ", current_value)
+
+
+                # Set the 'probL' values for the current block
+                df_trials.loc[start_idx:end_idx, 'probL'] = current_value
+                
+                # Update the previous_value for the next block
+                previous_value = current_value
+
+            # Handle any remaining rows after the last value_sum block
+            if len(df_trials) > values_sum[-1]:
+                df_trials.loc[values_sum[-1] + 1:, 'probL'] = previous_value
+
+            # plt.plot(df_trials.probabilityLeft, alpha=0.5)
+            # plt.plot(df_trials.probL, alpha=0.5)
+            # plt.title(f'behavior_{subject}_{session_date}_{eid}')
+            # plt.show() 
+        except: 
+            df_trials["probL"] = df_trials["probabilityLeft"] 
+
     except Exception as e:
         # If loading fails, use the alternative method
         print("Failed to load trials directly. Using alternative method...")
-        session_path_behav = f'/home/kceniabougrova/Documents/nph/Behav_2024Mar20/{rec.mouse}/{rec.date}/001/'
+        session_path_behav = f'/home/kceniabougrova/Documents/nph/Behav_2024Mar20/{mouse}/{date}/001/'
         df_alldata = extract_all(session_path_behav)
         table_data = df_alldata[0]['table']
         trials = pd.DataFrame(table_data) 
+        trials['trialNumber'] = range(1, len(trials) + 1) 
+        trials["mouse"] = mouse
+        trials["date"] = date
+        trials["region"] = region
+        trials["eid"] = eid 
+        df_trials=trials
+
+        # create allContrasts 
+        idx = 2
+        new_col = df_trials['contrastLeft'].fillna(df_trials['contrastRight']) 
+        df_trials.insert(loc=idx, column='allContrasts', value=new_col) 
+        # create allSContrasts 
+        df_trials['allSContrasts'] = df_trials['allContrasts']
+        df_trials.loc[df_trials['contrastRight'].isna(), 'allSContrasts'] = df_trials['allContrasts'] * -1
+        df_trials.insert(loc=3, column='allSContrasts', value=df_trials.pop('allSContrasts'))
+        # create reactionTime
+        reactionTime = np.array((df_trials["firstMovement_times"])-(df_trials["stimOnTrigger_times"]))
+        df_trials["reactionTime"] = reactionTime 
+
+        try: 
+            dataset_task_settings = one.load_dataset(eid, '_iblrig_taskSettings.raw.json')  
+            values = dataset_task_settings.get('LEN_BLOCKS', 'Key not found') 
+            # values gives the block length 
+            # example for eid = 'be3208c9-43de-44dc-bdc6-ff8963464f98'
+            # [90, 27, 82, 50, 30, 30, 31, 78, 64, 83, 24, 42, 74, 72, 34, 41, 52, 56, 68, 39, 45, 88, 37, 35, 29, 69, 85, 52, 37, 78, 80, 28, 68, 95, 34, 36, 42] 
+
+            values_sum = np.cumsum(values) 
+
+            # Initialize a new column 'probL' with NaN values
+            df_trials['probL'] = np.nan
+
+            # Set the first block (first `values_sum[0]` rows) to 0.5
+            df_trials.loc[:values_sum[0]-1, 'probL'] = 0.5 
+
+
+            df_trials.loc[values_sum[0]:values_sum[1]-1, 'probL'] = df_trials.loc[values_sum[0], 'probabilityLeft']
+
+            previous_value = df_trials.loc[values_sum[1]-1, 'probabilityLeft'] 
+
+
+            # Iterate over the blocks starting from values_sum[1]
+            for i in range(1, len(values_sum)-1):
+                print("i = ", i)
+                start_idx = values_sum[i]
+                end_idx = values_sum[i+1]-1
+                print("start and end _idx = ", start_idx, end_idx)
+                
+                # Assign the block value based on the previous one
+                if previous_value == 0.2:
+                    current_value = 0.8
+                else:
+                    current_value = 0.2
+                print("current value = ", current_value)
+
+
+                # Set the 'probL' values for the current block
+                df_trials.loc[start_idx:end_idx, 'probL'] = current_value
+                
+                # Update the previous_value for the next block
+                previous_value = current_value
+
+            # Handle any remaining rows after the last value_sum block
+            if len(df_trials) > values_sum[-1]:
+                df_trials.loc[values_sum[-1] + 1:, 'probL'] = previous_value
+
+            # plt.plot(df_trials.probabilityLeft, alpha=0.5)
+            # plt.plot(df_trials.probL, alpha=0.5)
+            # plt.title(f'behavior_{subject}_{session_date}_{eid}')
+            # plt.show() 
+
+        except: 
+            df_trials["probL"] = df_trials["probabilityLeft"] 
+
     return eid, trials 
 
 # Get the list of good sessions and their info 
 df_goodsessions = pd.read_csv('/home/ibladmin/Downloads/Mice_GOOD_sorted.csv') 
-df_goodsessions['Date'] = pd.to_datetime(df_goodsessions['Date'], format='%m/%d/%Y')
+# df_goodsessions['Date'] = pd.to_datetime(df_goodsessions['Date'], format='%m/%d/%Y')
+# # Convert rows 0 to 249
+df_goodsessions.loc[:249, 'Date'] = pd.to_datetime(df_goodsessions.loc[:249, 'Date'], format='%m/%d/%Y')
+# # Convert the rest of the rows
+df_goodsessions.loc[250:, 'Date'] = pd.to_datetime(df_goodsessions.loc[250:, 'Date'])
+
+
 df_gs = df_goodsessions[['Mouse', 'Date', 'NM', 'region']] 
 
 # Edit the event! 
-EVENT = 'feedback_times'
+EVENT = 'stimOnTrigger_times'
 
 # Initialize empty containers
 psth_combined = None
@@ -73,7 +225,7 @@ EXCLUDES = []
 IMIN = 0
 
 # Choose the NM
-NM="ACh" #"DA", "5HT", "NE", "ACh"
+NM="5HT" #"DA", "5HT", "NE", "ACh"
 df_goodsessions = df_gs[df_gs["NM"]==NM].reset_index(drop=True)
 
 ####################################
@@ -103,59 +255,53 @@ for i in range(len(df_goodsessions)):
             date = date.strftime('%Y-%m-%d')
         region = df_goodsessions.region[i]
         eid, df_trials = get_eid(mouse,date)
-        print(f"{mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
-        print(f"i | {mouse} | {date} | {region} | {eid}")
+
+        dataset_task_settings = one.load_dataset(eid, '_iblrig_taskSettings.raw.json')  
+        values = dataset_task_settings.get('BLOCK_INIT_5050', 'Key not found') 
+
+        if values == True: #filter to have only BCW sessions 
+
+            print(f"{mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
+            print(f"i | {mouse} | {date} | {region} | {eid}")
 
 
-        df_trials['trialNumber'] = range(1, len(df_trials) + 1) 
-        df_trials["mouse"] = mouse
-        df_trials["date"] = date
-        df_trials["region"] = region
-        df_trials["eid"] = eid 
 
-        path_initial = f'/mnt/h0/kb/data/psth_npy/preprocess_calcium_jove2019_{EVENT}_etc/' 
-        path = path_initial + f'preprocess_calcium_jove2019_{EVENT}_{mouse}_{date}_Region{region}G_{eid}.npy'
+            path_initial = f'/mnt/h0/kb/data/psth_npy/preprocess_calcium_jove2019_{EVENT}_etc/' 
+            path = path_initial + f'preprocess_calcium_jove2019_{EVENT}_{mouse}_{date}_Region{region}G_{eid}.npy'
 
-        # Load psth_idx from file
-        psth_idx = np.load(path)
+            # Load psth_idx from file
+            psth_idx = np.load(path)
 
-        # Concatenate psth_idx arrays
-        if psth_combined is None:
-            psth_combined = psth_idx
+            # Concatenate psth_idx arrays
+            if psth_combined is None:
+                psth_combined = psth_idx
+            else: 
+                psth_combined = np.hstack((psth_combined, psth_idx))
+
+
+
+            # Concatenate df_trials DataFrames
+            df_trials_combined = pd.concat([df_trials_combined, df_trials], axis=0)
+
+            # Reset index of the combined DataFrame
+            df_trials_combined.reset_index(drop=True, inplace=True)
+
+            # Print shapes to verify
+            print("Shape of psth_combined:", psth_combined.shape)
+            print("Shape of df_trials_combined:", df_trials_combined.shape)
+        
         else: 
-            psth_combined = np.hstack((psth_combined, psth_idx))
-
-        # create allContrasts 
-        idx = 2
-        new_col = df_trials['contrastLeft'].fillna(df_trials['contrastRight']) 
-        df_trials.insert(loc=idx, column='allContrasts', value=new_col) 
-        # create allSContrasts 
-        df_trials['allSContrasts'] = df_trials['allContrasts']
-        df_trials.loc[df_trials['contrastRight'].isna(), 'allSContrasts'] = df_trials['allContrasts'] * -1
-        df_trials.insert(loc=3, column='allSContrasts', value=df_trials.pop('allSContrasts'))
-        # create reactionTime
-        reactionTime = np.array((df_trials["firstMovement_times"])-(df_trials["stimOnTrigger_times"]))
-        df_trials["reactionTime"] = reactionTime 
-
-        # Concatenate df_trials DataFrames
-        df_trials_combined = pd.concat([df_trials_combined, df_trials], axis=0)
-
-        # Reset index of the combined DataFrame
-        df_trials_combined.reset_index(drop=True, inplace=True)
-
-        # Print shapes to verify
-        print("Shape of psth_combined:", psth_combined.shape)
-        print("Shape of df_trials_combined:", df_trials_combined.shape)
+            continue
     except: 
         print("ERROR: ", i)
-        EXCLUDES.append(i)
+        EXCLUDES.append(i) #run 20240113 len(EXCLUDES) = 42
 #%%
     ##################################################################################################
     # PLOT heatmap and correct vs incorrect 
@@ -210,12 +356,90 @@ for i in range(len(df_goodsessions)):
     ##################################################################################################
 
 
+
+#%%
+"""
+..######..##.....##.########..######..##....##....########..####.########.########....########..########.########.##......##.########.########.##....##....########..########...#######..########..##.........
+.##....##.##.....##.##.......##....##.##...##.....##.....##..##..##.......##..........##.....##.##..........##....##..##..##.##.......##.......###...##....##.....##.##.....##.##.....##.##.....##.##.........
+.##.......##.....##.##.......##.......##..##......##.....##..##..##.......##..........##.....##.##..........##....##..##..##.##.......##.......####..##....##.....##.##.....##.##.....##.##.....##.##.........
+.##.......#########.######...##.......#####.......##.....##..##..######...######......########..######......##....##..##..##.######...######...##.##.##....########..########..##.....##.########..##.........
+.##.......##.....##.##.......##.......##..##......##.....##..##..##.......##..........##.....##.##..........##....##..##..##.##.......##.......##..####....##........##...##...##.....##.##.....##.##.........
+.##....##.##.....##.##.......##....##.##...##.....##.....##..##..##.......##..........##.....##.##..........##....##..##..##.##.......##.......##...###....##........##....##..##.....##.##.....##.##.........
+..######..##.....##.########..######..##....##....########..####.##.......##..........########..########....##.....###..###..########.########.##....##....##........##.....##..#######..########..########...
+""" 
+import pandas as pd
+import matplotlib.pyplot as plt
+import scipy.stats as stats
+
+# Assuming df_trials_combined is already loaded
+
+# Grouping by probL and calculating % correct
+grouped = df_trials_combined.groupby('probL')['feedbackType'].apply(lambda x: (x == 1).mean() * 100).reset_index()
+grouped.columns = ['probL', 'percent_correct']
+
+# Plotting the results
+plt.figure(figsize=(5, 5))
+plt.bar(grouped['probL'], grouped['percent_correct'], color=['blue', 'orange', 'green'], alpha=0.5)
+plt.title('Percentage of Correct Answers by probL')
+plt.xlabel('probL')
+plt.ylabel('Percentage of Correct Answers')
+plt.xticks(grouped['probL'])
+plt.ylim(0, 100)
+plt.show()
+
+# Extracting correct rates for each group
+group_data = [df_trials_combined.loc[df_trials_combined['probL'] == prob, 'feedbackType'] == 1 for prob in grouped['probL']]
+
+# Performing statistical test (Kruskal-Wallis)
+stat, p_value = stats.kruskal(*group_data)
+print(f"Kruskal-Wallis Test: H-statistic = {stat:.3f}, p-value = {p_value:.3f}")
+
+if p_value < 0.05:
+    print("Significant differences exist between the groups.")
+else:
+    print("No significant differences between the groups.")
+
+
+from scikit_posthocs import posthoc_dunn
+import seaborn as sns
+
+# Perform Dunn's test
+posthoc = posthoc_dunn(
+    [df_trials_combined.loc[df_trials_combined['probL'] == prob, 'feedbackType'] == 1 for prob in grouped['probL']],
+    p_adjust='bonferroni'
+)
+
+# Display Dunn's test results
+print(posthoc)
+
+
+# Create a heatmap for Dunn's test results
+plt.figure(figsize=(8, 6))
+sns.heatmap(posthoc, annot=True, fmt=".3f", cmap="coolwarm", xticklabels=grouped['probL'], yticklabels=grouped['probL'])
+plt.title("Dunn's Test Pairwise Comparison (p-values)")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
 #%%
 """ SAVE THE PSTH AND DF_TRIALS """
 #save the psth npy and the df_trials pqt 
 # path_initial = '/mnt/h0/kb/data/psth_npy/preprocess_calcium_jove2019_feedback_times_etc/' 
-np.save(path_initial+f'RESULTS/jove2019_psth_combined_{NM}_{EVENT}.npy', psth_combined)
-df_trials_combined.to_parquet(path_initial+f'RESULTS/jove2019_df_trials_combined_{NM}_{EVENT}.pqt')
+# np.save(path_initial+f'RESULTS/jove2019_psth_combined_{NM}_{EVENT}.npy', psth_combined)
+# df_trials_combined.to_parquet(path_initial+f'RESULTS/jove2019_df_trials_combined_{NM}_{EVENT}.pqt')
+np.save(path_initial+f'RESULTS/jove2019_psth_combined_{NM}_{EVENT}_BCW.npy', psth_combined)
+df_trials_combined.to_parquet(path_initial+f'RESULTS/jove2019_df_trials_combined_{NM}_{EVENT}_BCW.pqt')
+
 
 
 
@@ -1180,7 +1404,15 @@ plt.show()
 ##################################################################################################
 ##################################################################################################
 ##############################  ############################################
-""" 4.1 2x2 4NMs reaction times diff between correct and incorrect """ 
+"""
+.########..########....###.....######..########.####..#######..##....##....########.####.##.....##.########..######.
+.##.....##.##.........##.##...##....##....##.....##..##.....##.###...##.......##.....##..###...###.##.......##....##
+.##.....##.##........##...##..##..........##.....##..##.....##.####..##.......##.....##..####.####.##.......##......
+.########..######...##.....##.##..........##.....##..##.....##.##.##.##.......##.....##..##.###.##.######....######.
+.##...##...##.......#########.##..........##.....##..##.....##.##..####.......##.....##..##.....##.##.............##
+.##....##..##.......##.....##.##....##....##.....##..##.....##.##...###.......##.....##..##.....##.##.......##....##
+.##.....##.########.##.....##..######.....##....####..#######..##....##.......##....####.##.....##.########..######.
+"""""" 4.1 2x2 4NMs reaction times diff between correct and incorrect """ 
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -2965,7 +3197,7 @@ gs = fig.add_gridspec(2, 2, height_ratios=[3, 3])
 
 def plot_neuromodulator(ax, psth_combined, df_trials, title):
     # Filter to include only correct trials
-    correct_trials_mask = df_trials.feedbackType == 1 #change here VenomA
+    correct_trials_mask = df_trials.feedbackType == 1 #change here
     df_trials_correct = df_trials[correct_trials_mask]
     unique_mice = df_trials_correct.mouse.unique()
     
@@ -3465,7 +3697,7 @@ for name in NEUROMODULATORS:
 
 # %%
 """ 
-
+video
 V I D E O   D A T A
 02Aug2024 
 
@@ -3507,7 +3739,8 @@ video_times = np.load("/home/ibladmin/Downloads/_ibl_leftCamera.times.1daf7fae-9
 video_data["times"] = video_times
 
 # for the new 2 videos 12Aug2024
-test = one.load_object(eid[0], 'leftCamera', attribute=['lightningPose', 'times'])
+# test = one.load_object(eid[0], 'leftCamera', attribute=['lightningPose', 'times'])
+test = one.load_object(eid, 'leftCamera', attribute=['lightningPose', 'times'], query_type='remote')
 video_data = pd.DataFrame(test['lightningPose']) 
 video_data["times"] = test.times
 
@@ -5218,3 +5451,526 @@ ax4.set_xlabel('Time')
 fig.suptitle(f'calcium_mad_{EVENT}_{mouse}_{date}_{region}_{NM}_{eid}', y=1, fontsize=14)
 plt.tight_layout()
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
+""" THIS ONE LAST VERSION 29October2024 """
+import os
+import numpy as np 
+import pandas as pd
+import matplotlib.pyplot as plt 
+import seaborn as sns
+from ibldsp.utils import parabolic_max 
+from iblphotometry.preprocessing import preprocessing_alejandro, jove2019, psth, preprocess_sliding_mad, photobleaching_lowpass 
+
+from one.api import ONE #always after the imports 
+one = ONE(cache_dir="/mnt/h0/kb/data/one") 
+
+psth_combined = None
+df_trials_combined = None
+df_nph_combined = None
+
+#functions 
+def get_eid(mouse,date): 
+    eids = one.search(subject=mouse, date=date) 
+    eid = eids[0]
+    ref = one.eid2ref(eid)
+    print(eid)
+    print(ref) 
+    try:
+        # Try to load the trials directly
+        a = one.load_object(eid, 'trials')
+        trials = a.to_df()
+    except Exception as e:
+        # If loading fails, use the alternative method
+        print("Failed to load trials directly. Using alternative method...")
+        session_path_behav = f'/home/kceniabougrova/Documents/nph/Behav_2024Mar20/{rec.mouse}/{rec.date}/001/'
+        df_alldata = extract_all(session_path_behav)
+        table_data = df_alldata[0]['table']
+        trials = pd.DataFrame(table_data) 
+    return eid, trials 
+
+# Get the list of good sessions and their info 
+df_goodsessions = pd.read_csv('/home/ibladmin/Downloads/Mice_GOOD_sorted.csv') 
+df_goodsessions['Date'] = pd.to_datetime(df_goodsessions['Date'], format='%m/%d/%Y')
+df_gs = df_goodsessions[['Mouse', 'Date', 'NM', 'region']] 
+
+# Edit the event! 
+EVENT = 'feedback_times'
+
+# Initialize empty containers
+psth_combined = None
+df_trials_combined = pd.DataFrame() 
+df_nph_combined = pd.DataFrame()
+
+
+
+
+
+NM="ACh" #"DA", "5HT", "NE", "ACh"
+df_goodsessions = df_gs[df_gs["NM"]==NM].reset_index(drop=True)
+
+for i in range(len(df_goodsessions)): 
+    mouse = df_goodsessions.Mouse[i] 
+    date = df_goodsessions.Date[i]
+    if isinstance(date, pd.Timestamp):
+        date = date.strftime('%Y-%m-%d')
+    region = df_goodsessions.region[i]
+    eid, df_trials = get_eid(mouse,date)
+
+    """ LOAD TRIALS """
+    def load_trials_updated(eid=eid): 
+        trials = one.load_object(eid, 'trials')
+        ref = one.eid2ref(eid)
+        subject = ref.subject
+        session_date = str(ref.date) 
+        if len(trials['intervals'].shape) == 2: 
+            trials['intervals_0'] = trials['intervals'][:, 0]
+            trials['intervals_1'] = trials['intervals'][:, 1]
+            del trials['intervals']  # Remove original nested array 
+        df_trials = pd.DataFrame(trials) 
+        idx = 2
+        new_col = df_trials['contrastLeft'].fillna(df_trials['contrastRight']) 
+        df_trials.insert(loc=idx, column='allContrasts', value=new_col) 
+        # create allSContrasts 
+        df_trials['allSContrasts'] = df_trials['allContrasts']
+        df_trials.loc[df_trials['contrastRight'].isna(), 'allSContrasts'] = df_trials['allContrasts'] * -1
+        df_trials.insert(loc=3, column='allSContrasts', value=df_trials.pop('allSContrasts'))
+        df_trials[["subject", "date", "eid"]] = [subject, session_date, eid]    
+        df_trials["reactionTime"] = df_trials["firstMovement_times"] - df_trials["stimOnTrigger_times"]
+        df_trials["responseTime"] = df_trials["response_times"] - df_trials["stimOnTrigger_times"] 
+        df_trials["quiescenceTime"] = df_trials["stimOnTrigger_times"] - df_trials["intervals_0"] 
+        df_trials["trialTime"] = df_trials["intervals_1"] - df_trials["intervals_0"]  
+
+        try: 
+            dataset_task_settings = one.load_dataset(eid, '_iblrig_taskSettings.raw.json')  
+            values = dataset_task_settings.get('LEN_BLOCKS', 'Key not found') 
+            # values gives the block length 
+            # example for eid = 'be3208c9-43de-44dc-bdc6-ff8963464f98'
+            # [90, 27, 82, 50, 30, 30, 31, 78, 64, 83, 24, 42, 74, 72, 34, 41, 52, 56, 68, 39, 45, 88, 37, 35, 29, 69, 85, 52, 37, 78, 80, 28, 68, 95, 34, 36, 42] 
+
+            values_sum = np.cumsum(values) 
+
+            # Initialize a new column 'probL' with NaN values
+            df_trials['probL'] = np.nan
+
+            # Set the first block (first `values_sum[0]` rows) to 0.5
+            df_trials.loc[:values_sum[0]-1, 'probL'] = 0.5 
+
+
+            df_trials.loc[values_sum[0]:values_sum[1]-1, 'probL'] = df_trials.loc[values_sum[0], 'probabilityLeft']
+
+            previous_value = df_trials.loc[values_sum[1]-1, 'probabilityLeft'] 
+
+
+            # Iterate over the blocks starting from values_sum[1]
+            for i in range(1, len(values_sum)-1):
+                print("i = ", i)
+                start_idx = values_sum[i]
+                end_idx = values_sum[i+1]-1
+                print("start and end _idx = ", start_idx, end_idx)
+                
+                # Assign the block value based on the previous one
+                if previous_value == 0.2:
+                    current_value = 0.8
+                else:
+                    current_value = 0.2
+                print("current value = ", current_value)
+
+
+                # Set the 'probL' values for the current block
+                df_trials.loc[start_idx:end_idx, 'probL'] = current_value
+                
+                # Update the previous_value for the next block
+                previous_value = current_value
+
+            # Handle any remaining rows after the last value_sum block
+            if len(df_trials) > values_sum[-1]:
+                df_trials.loc[values_sum[-1] + 1:, 'probL'] = previous_value
+
+            # plt.plot(df_trials.probabilityLeft, alpha=0.5)
+            # plt.plot(df_trials.probL, alpha=0.5)
+            # plt.title(f'behavior_{subject}_{session_date}_{eid}')
+            # plt.show() 
+        except: 
+            pass 
+
+        df_trials["trialNumber"] = range(1, len(df_trials) + 1) 
+        return df_trials, subject, session_date
+
+    df_trials, subject, session_date = load_trials_updated(eid) 
+    mouse = subject
+    date = session_date
+    # eid, df_trials2 = get_eid(mouse,date)
+
+    region = f'Region{region}G'
+    try: 
+        try: 
+            nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/001/alf/{region}/raw_photometry.pqt'
+            df_nph = pd.read_parquet(nph_path)
+        except:
+            try:
+                nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/002/alf/{region}/raw_photometry.pqt'
+                df_nph = pd.read_parquet(nph_path)
+            except:
+                try:
+                    nph_path = f'/mnt/h0/kb/data/one/mainenlab/Subjects/{mouse}/{date}/003/alf/{region}/raw_photometry.pqt'
+                    df_nph = pd.read_parquet(nph_path)
+                except:
+                    print(f"Could not find raw_photometry.pqt in paths 001, 002, or 003 for mouse {mouse} on date {date}")
+                    df_nph = None  # Optionally set df_nph to None or handle it appropriately
+
+
+        session_start = df_trials.intervals_0.values[0] - 10  # Start time, 100 seconds before the first tph value
+        session_end = df_trials.intervals_1.values[-1] + 10   # End time, 100 seconds after the last tph value
+
+        # Select data within the specified time range
+        selected_data = df_nph[
+            (df_nph['times'] >= session_start) &
+            (df_nph['times'] <= session_end)
+        ] 
+        df_nph = selected_data.reset_index(drop=True) 
+            
+
+
+        time_diffs = (df_nph["times"]).diff().dropna() 
+        fs = 1 / time_diffs.median() 
+        
+        df_nph[["subject", "date", "eid"]] = [subject, session_date, eid]    
+        df_nph['calcium_photobleach'] = photobleaching_lowpass(df_nph["raw_calcium"].values, fs=fs) #KB
+        df_nph['isosbestic_photobleach'] = photobleaching_lowpass(df_nph["raw_isosbestic"], fs=fs)
+        df_nph['calcium_jove2019'] = jove2019(df_nph["raw_calcium"], df_nph["raw_isosbestic"], fs=fs) 
+        df_nph['isosbestic_jove2019'] = jove2019(df_nph["raw_isosbestic"], df_nph["raw_calcium"], fs=fs)
+        df_nph['calcium_mad'] = preprocess_sliding_mad(df_nph["raw_calcium"].values, df_nph["times"].values, fs=fs)
+        df_nph['isosbestic_mad'] = preprocess_sliding_mad(df_nph["raw_isosbestic"].values, df_nph["times"].values, fs=fs)
+        df_nph['calcium_alex'] = preprocessing_alejandro(df_nph["raw_calcium"], fs=fs) 
+        df_nph['isos_alex'] = preprocessing_alejandro(df_nph['raw_isosbestic'], fs=fs)
+
+
+
+
+        plt.figure(figsize=(20, 6))
+        plt.plot(df_nph['times'][1000:2000], df_nph['calcium_mad'][1000:2000], linewidth=1.25, alpha=0.8, color='teal') 
+        plt.plot(df_nph['times'][1000:2000], df_nph['isosbestic_mad'][1000:2000], linewidth=1.25, alpha=0.8, color='purple') 
+        plt.show() 
+
+        """ SELECT THE EVENT AND WHAT INTERVAL TO PLOT IN THE PSTH """ 
+        EVENT = "feedback_times" 
+        time_bef = -1
+        time_aft = 2
+        PERIEVENT_WINDOW = [time_bef,time_aft]
+        SAMPLING_RATE = int(1/np.mean(np.diff(df_nph.times))) 
+
+
+
+        nph_times = df_nph['times'].values
+
+        # Step 1: Identify the last row index to keep in df_trials
+        last_index_to_keep = None
+
+        for index, row in df_trials.iterrows():
+            if row['intervals_1'] >= nph_times.max():  # Check if intervals_1 is >= any nph times
+                last_index_to_keep = index - 1  # Store the index just before the current one
+                break
+
+        # If no row meets the condition, keep all
+        if last_index_to_keep is None:
+            filtered_df_trials = df_trials
+        else:
+            filtered_df_trials = df_trials.iloc[:last_index_to_keep + 1]
+
+        df_trials_original = df_trials
+        df_trials = filtered_df_trials
+
+        array_timestamps = np.array(df_nph.times) #pick the nph timestamps transformed to bpod clock 
+        event_test = np.array(df_trials.intervals_0) #pick the intervals_0 timestamps 
+        idx_event = np.searchsorted(array_timestamps, event_test) #check idx where they would be included, in a sorted way 
+        """ create a column with the trial number in the nph df """
+        df_nph["trial_number"] = 0 #create a new column for the trial_number 
+        df_nph.loc[idx_event,"trial_number"]=1
+        df_nph["trial_number"] = df_nph.trial_number.cumsum() #sum the [i-1] to i in order to get the trial number 
+
+        sample_window = np.arange(PERIEVENT_WINDOW[0] * SAMPLING_RATE, PERIEVENT_WINDOW[1] * SAMPLING_RATE + 1)
+        n_trials = df_trials.shape[0]
+
+        psth_idx = np.tile(sample_window[:,np.newaxis], (1, n_trials)) 
+
+        event_times = np.array(df_trials[EVENT]) #pick the feedback timestamps 
+
+        event_idx = np.searchsorted(array_timestamps, event_times) #check idx where they would be included, in a sorted way 
+
+        psth_idx += event_idx
+
+
+
+
+
+
+
+
+        # path_initial = f'/mnt/h0/kb/data/psth_npy/preprocess_calcium_jove2019_{EVENT}_etc/' 
+        # path = path_initial + f'preprocess_calcium_jove2019_{EVENT}_{mouse}_{date}_Region{region}G_{eid}.npy'    
+
+        
+        # # Load psth_idx from file
+        # psth_idx = np.load(path)
+
+        # Concatenate psth_idx arrays
+        if psth_combined is None:
+            psth_combined = psth_idx
+        else: 
+            psth_combined = np.hstack((psth_combined, psth_idx))
+
+
+        # Concatenate df_trials DataFrames
+        df_trials_combined = pd.concat([df_trials_combined, df_trials], axis=0)
+
+        # Reset index of the combined DataFrame
+        df_trials_combined.reset_index(drop=True, inplace=True)
+
+        # Concatenate df_trials DataFrames
+        df_nph_combined = pd.concat([df_nph_combined, df_nph], axis=0)
+
+        # Reset index of the combined DataFrame
+        df_nph_combined.reset_index(drop=True, inplace=True)
+
+        # Print shapes to verify
+        print("Shape of psth_combined:", psth_combined.shape)
+        print("Shape of df_trials_combined:", df_trials_combined.shape)
+        print("Shape of df_nph_combined:", df_nph_combined.shape)
+    except: 
+        pass
+
+##################################################################################################
+# PLOT heatmap and correct vs incorrect 
+psth_good = df_nph_combined.calcium_mad.values[psth_combined[:,(df_trials_combined.feedbackType == 1)]]
+psth_error = df_nph_combined.calcium_mad.values[psth_combined[:,(df_trials_combined.feedbackType == -1)]]
+# Calculate averages and SEM
+psth_good_avg = psth_good.mean(axis=1)
+sem_good = psth_good.std(axis=1) / np.sqrt(psth_good.shape[1])
+psth_error_avg = psth_error.mean(axis=1)
+sem_error = psth_error.std(axis=1) / np.sqrt(psth_error.shape[1])
+
+# Create the figure and gridspec
+fig = plt.figure(figsize=(10, 12))
+gs = fig.add_gridspec(2, 2, height_ratios=[3, 1])
+
+# Plot the heatmap and line plot for correct trials
+ax1 = fig.add_subplot(gs[0, 0])
+sns.heatmap(psth_good.T, cbar=False, ax=ax1) #, center = 0.0)
+ax1.invert_yaxis()
+ax1.axvline(x=30, color="white", alpha=0.9, linewidth=3, linestyle="dashed") 
+ax1.set_title('Correct Trials')
+
+ax2 = fig.add_subplot(gs[1, 0], sharex=ax1)
+ax2.plot(psth_good_avg, color='#2f9c95', linewidth=3) 
+# ax2.plot(psth_good, color='#2f9c95', linewidth=0.1, alpha=0.2)
+ax2.fill_between(range(len(psth_good_avg)), psth_good_avg - sem_good, psth_good_avg + sem_good, color='#2f9c95', alpha=0.15)
+ax2.axvline(x=30, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+ax2.set_ylabel('Average Value')
+ax2.set_xlabel('Time')
+
+# Plot the heatmap and line plot for incorrect trials
+ax3 = fig.add_subplot(gs[0, 1], sharex=ax1)
+sns.heatmap(psth_error.T, cbar=False, ax=ax3) #, center = 0.0)
+ax3.invert_yaxis()
+ax3.axvline(x=30, color="white", alpha=0.9, linewidth=3, linestyle="dashed") 
+ax3.set_title('Incorrect Trials')
+
+ax4 = fig.add_subplot(gs[1, 1], sharex=ax3, sharey=ax2)
+ax4.plot(psth_error_avg, color='#d62828', linewidth=3)
+ax4.fill_between(range(len(psth_error_avg)), psth_error_avg - sem_error, psth_error_avg + sem_error, color='#d62828', alpha=0.15)
+ax4.axvline(x=30, color="black", alpha=0.9, linewidth=3, linestyle="dashed")
+ax4.set_ylabel('Average Value')
+ax4.set_xlabel('Time')
+
+# MIGHT BE WRONG!!!!! 
+# ticks = np.linspace(0, len(psth_good_avg), 4)  # Assuming 91 points, set 4 tick marks
+# tick_labels = [-1, 0, 1, 2]    # Labels corresponding to time from -1 to 2 seconds
+
+fig.suptitle(f'calcium_mad_{EVENT}_{mouse}_{date}_{region}_{NM}_{eid}', y=1, fontsize=14)
+plt.tight_layout()
+plt.show()
+
+#%%
+columns = df_nph.columns 
+for column in columns[6:len(columns)-1]: 
+    fig = plt.figure(figsize=(20, 8))
+    plt.plot(df_nph[column], linewidth=0.25, alpha=0.5) 
+    # plt.xlim(25000,50500)
+    plt.title(column)
+    plt.show()
+# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%% 
+#################################################################################
+#################################################################################
+# NEW VIDEOS HABITUATION CHOICE WORLD HCW 2024-11-22 
+
+eid = '13319506-3b45-4e94-85c6-b1080dc7b10a' 
+# eid = 'b105bea6-b3d4-46e2-af41-4e7e53277f27' 
+ref = one.eid2ref(eid)
+ref
+
+video_data = pd.read_parquet('/home/ibladmin/Downloads/_ibl_leftCamera.lightningPose.c10bfdf3-aecd-4a77-a13e-fe78335d45f8.pqt')
+test = one.load_object(eid, 'leftCamera', attribute=['times']) 
+video_data["times"] = test.times
+plt.rcParams["figure.figsize"] = (20,3)
+for column in video_data.columns: 
+    plt.plot(video_data[column], linewidth=0.5, alpha=0.85)
+    plt.legend()
+    plt.title(column)
+    plt.show() 
+
+
+
+#%%
+a = one.load_object(eid, 'trials')
+df_trials = a.to_df() 
+
+#%% 
+video_data["moving_avg_top_r_x"] = video_data["pupil_top_r_x"].rolling(window=30).mean()
+plt.rcParams["figure.figsize"] = (15,5)
+plt.plot(video_data["times"], video_data["moving_avg_top_r_x"], linewidth=1, alpha=0.85, color='#582f0e')
+for x in df_trials.feedback_times: 
+    plt.axvline(x, linewidth=0.5, alpha=1, color = '#2978a0')
+plt.legend()
+plt.title(column)
+plt.show() 
+# %%
+
+
+
+
+
+
+

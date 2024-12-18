@@ -79,7 +79,7 @@ for mouse in mice:
 
         plt.show()
     except: 
-        print(f"no data for {mouse}")import os
+        print(f"no data for {mouse}")
 
 ###########################################################################################
 ###########################################################################################
@@ -369,18 +369,18 @@ for i,rec in df_G_2.iterrows():
         psth_idx += feedback_idx
 
         # try: 
-        photometry_s_1 = df_nph.calcium_photobleach.values[psth_idx] 
-        np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_calcium_photobleach_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_1)
-        photometry_s_2 = df_nph.isosbestic_photobleach.values[psth_idx] 
-        np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_isosbestic_photobleach_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_2)
-        photometry_s_3 = df_nph.calcium_jove2019.values[psth_idx] 
-        np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_calcium_jove2019_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_3)
-        photometry_s_4 = df_nph.isosbestic_jove2019.values[psth_idx] 
-        np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_isosbestic_jove2019_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_4)
-        photometry_s_5 = df_nph.calcium_mad.values[psth_idx] 
-        np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_calcium_mad_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_5)
-        photometry_s_6 = df_nph.isosbestic_mad.values[psth_idx] 
-        np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_isosbestic_mad_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_6) 
+        # photometry_s_1 = df_nph.calcium_photobleach.values[psth_idx] 
+        # np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_calcium_photobleach_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_1)
+        # photometry_s_2 = df_nph.isosbestic_photobleach.values[psth_idx] 
+        # np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_isosbestic_photobleach_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_2)
+        # photometry_s_3 = df_nph.calcium_jove2019.values[psth_idx] 
+        # np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_calcium_jove2019_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_3)
+        # photometry_s_4 = df_nph.isosbestic_jove2019.values[psth_idx] 
+        # np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_isosbestic_jove2019_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_4)
+        # photometry_s_5 = df_nph.calcium_mad.values[psth_idx] 
+        # np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_calcium_mad_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_5)
+        # photometry_s_6 = df_nph.isosbestic_mad.values[psth_idx] 
+        # np.save(f'/mnt/h0/kb/data/psth_npy/30082024/preprocess_isosbestic_mad_{EVENT}_{mouse}_{date}_{region}_{eid}.npy', photometry_s_6) 
 
         # except: 
         #     print("#####################################CLIPPED PSTH#################################")
@@ -455,7 +455,7 @@ for i,rec in df_G_2.iterrows():
 
         fig.suptitle(f'calcium_mad_{EVENT}_{mouse}_{date}_{region}_{eid}', y=1, fontsize=14)
         plt.tight_layout()
-        plt.savefig(f'/mnt/h0/kb/data/psth_npy/30082024/Fig02_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
+        # plt.savefig(f'/mnt/h0/kb/data/psth_npy/30082024/Fig02_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
         plt.show()
 
 
@@ -520,7 +520,7 @@ for i,rec in df_G_2.iterrows():
 
         fig.suptitle(f'{EVENT}_{mouse}_{date}_{region}_{eid}', y=1, fontsize=14)
         plt.tight_layout()
-        plt.savefig(f'/mnt/h0/kb/data/psth_npy/30082024/Fig03_psth_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
+        # plt.savefig(f'/mnt/h0/kb/data/psth_npy/30082024/Fig03_psth_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
         plt.show() 
         
         print(f"DONE {mouse} | {date} | {region} | {eid}")
@@ -592,7 +592,7 @@ for i,rec in df_G_2.iterrows():
         # Adjust layout and show
         fig.suptitle(f'{EVENT}_{mouse}_{date}_{region}_{eid}', y=0.95, fontsize=16)
         plt.tight_layout(rect=[0, 0, 1, 0.95])
-        plt.savefig(f'/mnt/h0/kb/data/psth_npy/30082024/Fig04_psth_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
+        # plt.savefig(f'/mnt/h0/kb/data/psth_npy/30082024/Fig04_psth_{EVENT}_{mouse}_{date}_{region}_{eid}.png')
         plt.show()
 
 
@@ -639,8 +639,15 @@ for i,rec in df_G_2.iterrows():
 ###########################################################################################
 ###########################################################################################
 ###########################################################################################
-
-#%%
+"""
+..######...#######..##.....##.########..########..########..######...######......#######..########.....########.##.....##.########.....###....##....##.########.....########.....###....########....###...
+.##....##.##.....##.###...###.##.....##.##.....##.##.......##....##.##....##....##.....##.##.....##....##........##...##..##.....##...##.##...###...##.##.....##....##.....##...##.##......##......##.##..
+.##.......##.....##.####.####.##.....##.##.....##.##.......##.......##..........##.....##.##.....##....##.........##.##...##.....##..##...##..####..##.##.....##....##.....##..##...##.....##.....##...##.
+.##.......##.....##.##.###.##.########..########..######....######...######.....##.....##.########.....######......###....########..##.....##.##.##.##.##.....##....##.....##.##.....##....##....##.....##
+.##.......##.....##.##.....##.##........##...##...##.............##.......##....##.....##.##...##......##.........##.##...##........#########.##..####.##.....##....##.....##.#########....##....#########
+.##....##.##.....##.##.....##.##........##....##..##.......##....##.##....##....##.....##.##....##.....##........##...##..##........##.....##.##...###.##.....##....##.....##.##.....##....##....##.....##
+..######...#######..##.....##.##........##.....##.########..######...######......#######..##.....##....########.##.....##.##........##.....##.##....##.########.....########..##.....##....##....##.....##
+"""#%%
 """
 6. COMPRESS OR EXPAND THE DATA AROUND 2 BEHAVIORAL EVENTS 
 
@@ -790,3 +797,427 @@ process_and_plot(1, axes[1], "1")
 plt.tight_layout()
 plt.show() 
 #%% 
+"""
+...#####.............#####.......########............##.......######...#######..##.....##.########..########..########..######...######..########.########........##.########.##.....##.########.....###....##....##.########..########.########.
+..##...##...........##...##......##................####......##....##.##.....##.###...###.##.....##.##.....##.##.......##....##.##....##.##.......##.....##......##..##........##...##..##.....##...##.##...###...##.##.....##.##.......##.....##
+.##.....##.........##.....##.....##..................##......##.......##.....##.####.####.##.....##.##.....##.##.......##.......##.......##.......##.....##.....##...##.........##.##...##.....##..##...##..####..##.##.....##.##.......##.....##
+.##.....##.#######.##.....##.....#######..#######....##......##.......##.....##.##.###.##.########..########..######....######...######..######...##.....##....##....######......###....########..##.....##.##.##.##.##.....##.######...##.....##
+.##.....##.........##.....##...........##............##......##.......##.....##.##.....##.##........##...##...##.............##.......##.##.......##.....##...##.....##.........##.##...##........#########.##..####.##.....##.##.......##.....##
+..##...##...........##...##..###.##....##............##......##....##.##.....##.##.....##.##........##....##..##.......##....##.##....##.##.......##.....##..##......##........##...##..##........##.....##.##...###.##.....##.##.......##.....##
+...#####.............#####...###..######...........######.....######...#######..##.....##.##........##.....##.########..######...######..########.########..##.......########.##.....##.##........##.....##.##....##.########..########.########.
+"""
+# Function to process and plot data for both intervals
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to normalize photometry data
+def normalize_photometry_segment(segment, target_duration):
+    original_duration = len(segment)
+    original_time = np.linspace(0, original_duration - 1, original_duration)
+    target_time = np.linspace(0, original_duration - 1, target_duration)
+    normalized_segment = np.interp(target_time, original_time, segment)
+    return normalized_segment
+
+# General parameters
+PERIEVENT_WINDOW = 0.5  # Desired time window in seconds
+SAMPLING_RATE = int(fs)  # Sampling rate in Hz
+target_duration = int(PERIEVENT_WINDOW * SAMPLING_RATE)  # Convert to samples
+
+# Convert timestamps and other relevant columns to numpy arrays
+array_timestamps_bpod = np.array(df_nph.times)
+stimOnTrigger_times = np.array(df_trials.stimOnTrigger_times)
+feedback_times = np.array(df_trials.feedback_times)
+allContrasts = np.array(df_trials.allContrasts)
+feedbackTypes = np.array(df_trials.feedbackType)
+
+# Set up the subplot figure
+fig, axes = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
+
+# Function to process and plot data
+def process_and_plot(contrast_value, ax, title_suffix):
+    # Filter trials based on the contrast and feedback type
+    for feedback_type, color, label in [ 
+        (1, 'steelblue', 'Correct'), 
+        (-1, 'red', 'Incorrect')
+    ]:
+        # Apply filters for contrast and feedback type
+        valid_mask = (allContrasts == contrast_value) & (feedbackTypes == feedback_type)
+        stimOnTrigger_times_filtered = stimOnTrigger_times[valid_mask]
+        feedback_times_filtered = feedback_times[valid_mask]
+
+        # Calculate the time difference between feedback and stimOnTrigger
+        time_diff = feedback_times_filtered - stimOnTrigger_times_filtered
+
+        # Filter trials where the time difference is less than 5 seconds
+        valid_trials_mask = time_diff < 5
+        stimOnTrigger_times_filtered = stimOnTrigger_times_filtered[valid_trials_mask]
+        feedback_times_filtered = feedback_times_filtered[valid_trials_mask]
+
+        # Find indices corresponding to stimOnTrigger_times and feedback_times in df_nph
+        stim_idx_filtered = np.searchsorted(array_timestamps_bpod, stimOnTrigger_times_filtered)
+        feedback_idx_filtered = np.searchsorted(array_timestamps_bpod, feedback_times_filtered)
+
+        # Extract photometry data between stimOnTrigger_times and feedback_times
+        photometry_segments_filtered = []
+        post_feedback_segments_filtered = []  # For segments after feedback
+        for i in range(len(stim_idx_filtered)):
+            # Extract the segment from stimOnTrigger to feedback
+            photometry_segment = df_nph.calcium_mad.values[stim_idx_filtered[i]:feedback_idx_filtered[i]]
+            photometry_segments_filtered.append(photometry_segment)
+            
+            # Extract the segment from feedback to feedback + 0.5s
+            post_feedback_end_idx = feedback_idx_filtered[i] + int(0.5 * SAMPLING_RATE)
+            post_feedback_segment = df_nph.calcium_mad.values[feedback_idx_filtered[i]:post_feedback_end_idx]
+            post_feedback_segments_filtered.append(post_feedback_segment)
+
+        # Normalize each segment by compressing or expanding to 1.5 seconds
+        normalized_segments_filtered = [normalize_photometry_segment(segment, target_duration) for segment in photometry_segments_filtered]
+        normalized_post_feedback_segments = [normalize_photometry_segment(segment, target_duration) for segment in post_feedback_segments_filtered]
+
+        # Plot the average of all trials
+        if normalized_segments_filtered:  # Check if there are valid segments to plot
+            average_photometry_filtered = np.mean(normalized_segments_filtered, axis=0)
+            average_post_feedback_filtered = np.mean(normalized_post_feedback_segments, axis=0)
+
+            # Plot the pre-feedback data (0 to 0.5s)
+            ax.plot(np.linspace(0, PERIEVENT_WINDOW, len(average_photometry_filtered)), average_photometry_filtered, color=color, linewidth=3, label=f'{label} (Pre-feedback)')
+
+            # Plot the post-feedback data (0.5s to 1.0s)
+            ax.plot(np.linspace(PERIEVENT_WINDOW, 1.0, len(average_post_feedback_filtered)), average_post_feedback_filtered, color=color, linewidth=3, linestyle='--', label=f'{label} (Post-feedback)')
+
+    # Add vertical lines for events
+    ax.axvline(x=0, color="black", linestyle="--", label="stimOnTrigger_times")
+    ax.axvline(x=PERIEVENT_WINDOW, color="blue", linestyle="--", label="feedback_times")
+
+    # Add labels and title
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Normalized Calcium Signal")
+    ax.set_title(f'Normalized Photometry Data for 0.5s\n(Filtered for Feedback-StimOnTrigger < 5s)\nContrast = {title_suffix}')
+    ax.legend()
+
+# Process and plot data for contrast = 0
+process_and_plot(0, axes[0], "0")
+
+# Process and plot data for contrast = 1
+process_and_plot(1, axes[1], "1")
+
+# Adjust layout and display the plot
+plt.tight_layout()
+plt.show()
+
+
+#%%
+#same but layout a bit diff [2nd response]
+# Function to process and plot data for both intervals
+def process_and_plot_extended(contrast_value, ax, title_suffix):
+    for feedback_type, color, label in [ 
+        (1, 'steelblue', 'Correct'), 
+        (-1, 'red', 'Incorrect')
+    ]:
+        # Apply filters for contrast and feedback type
+        valid_mask = (allContrasts == contrast_value) & (feedbackTypes == feedback_type)
+        stimOnTrigger_times_filtered = stimOnTrigger_times[valid_mask]
+        feedback_times_filtered = feedback_times[valid_mask]
+
+        # Calculate the time difference between feedback and stimOnTrigger
+        time_diff = feedback_times_filtered - stimOnTrigger_times_filtered
+
+        # Filter trials where the time difference is less than 5 seconds
+        valid_trials_mask = time_diff < 5
+        stimOnTrigger_times_filtered = stimOnTrigger_times_filtered[valid_trials_mask]
+        feedback_times_filtered = feedback_times_filtered[valid_trials_mask]
+
+        # Find indices corresponding to stimOnTrigger_times and feedback_times in df_nph
+        stim_idx_filtered = np.searchsorted(array_timestamps_bpod, stimOnTrigger_times_filtered)
+        feedback_idx_filtered = np.searchsorted(array_timestamps_bpod, feedback_times_filtered)
+
+        # Extract photometry data between stimOnTrigger_times and feedback_times, and 0.5s after feedback_times
+        photometry_segments_first = []
+        photometry_segments_second = []
+        for i in range(len(stim_idx_filtered)):
+            # First interval: stimOnTrigger to feedback
+            segment_first = df_nph.calcium_mad.values[stim_idx_filtered[i]:feedback_idx_filtered[i]]
+            photometry_segments_first.append(segment_first)
+
+            # Second interval: feedback to feedback + 0.5s
+            feedback_end_idx = feedback_idx_filtered[i] + int(0.5 * SAMPLING_RATE)
+            segment_second = df_nph.calcium_mad.values[feedback_idx_filtered[i]:feedback_end_idx]
+            photometry_segments_second.append(segment_second)
+
+        # Normalize each segment by compressing or expanding
+        normalized_segments_first = [normalize_photometry_segment(segment, target_duration) for segment in photometry_segments_first]
+        normalized_segments_second = [normalize_photometry_segment(segment, target_duration) for segment in photometry_segments_second]
+
+        # Plot the average of all trials for both intervals
+        if normalized_segments_first:  # Check if there are valid segments to plot
+            avg_first = np.mean(normalized_segments_first, axis=0)
+            avg_second = np.mean(normalized_segments_second, axis=0) if normalized_segments_second else None
+
+            # Plot first interval
+            ax.plot(np.linspace(0, PERIEVENT_WINDOW, len(avg_first)), avg_first, color=color, linewidth=3, label=f'{label} (0-0.5s)')
+
+            # Plot second interval, shifted by 0.5s
+            if avg_second is not None:
+                ax.plot(np.linspace(PERIEVENT_WINDOW, 2 * PERIEVENT_WINDOW, len(avg_second)), avg_second, color=color, linestyle='--', linewidth=2, label=f'{label} (0.5-1.0s)')
+
+    # Add vertical lines for events
+    ax.axvline(x=0, color="black", linestyle="--", label="stimOnTrigger_times")
+    ax.axvline(x=PERIEVENT_WINDOW, color="blue", linestyle="--", label="feedback_times")
+    ax.axvline(x=2 * PERIEVENT_WINDOW, color="gray", linestyle="--", label="End of Second Interval")
+
+    # Add labels and title
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel("Normalized Calcium Signal")
+    ax.set_title(f'Normalized Photometry Data (Feedback-StimOnTrigger < 5s)\nContrast = {title_suffix}')
+    ax.legend()
+
+# Process and plot data for contrast = 0 and 1
+fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+process_and_plot_extended(0, axes[0], "0")
+process_and_plot_extended(1, axes[1], "1")
+
+# Adjust layout and display the plot
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
+
+
+
+
+
+
+
+
+from one.api import ONE 
+ONE() 
+one = ONE() 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+skipped_idxs = []
+for i in range(len(df1)): 
+    try: 
+        mouse = df1.mouse[i]
+        date = df1.date[i]
+        eid, df_Trials = get_eid(mouse, date)
+        # plt.plot(df_Trials.choice)
+        # plt.show()
+
+
+        #Load the trials and plot the psychometric curve 
+        trials = one.load_object(eid, 'trials', collection='alf')
+        from brainbox.behavior.training import compute_performance
+        performance, contrasts, n_contrasts = compute_performance(trials)
+        # performance, contrasts, n_contrasts = compute_performance(trials, prob_right=True)
+        # performance, contrasts, n_contrasts = compute_performance(trials, block=0.8)
+        from brainbox.behavior.training import plot_psychometric
+        def compute_performance(trials, signed_contrast=None, block=None, prob_right=False):
+            """
+            Compute performance on all trials at each contrast level from trials object
+
+            :param trials: trials object that must contain contrastLeft, contrastRight and feedbackType
+            keys
+            :type trials: dict
+            returns: float containing performance on easy contrast trials
+            """
+            if signed_contrast is None:
+                signed_contrast = get_signed_contrast(trials)
+
+            if block is None:
+                block_idx = np.full(trials.probabilityLeft.shape, True, dtype=bool)
+            else:
+                block_idx = trials.probabilityLeft == block
+
+            if not np.any(block_idx):
+                return np.nan * np.zeros(3)
+
+            contrasts, n_contrasts = np.unique(signed_contrast[block_idx], return_counts=True)
+
+            if not prob_right:
+                correct = trials.feedbackType == 1
+                performance = np.vectorize(lambda x: np.mean(correct[(x == signed_contrast) & block_idx]))(contrasts)
+            else:
+                rightward = trials.choice == -1
+                # Calculate the proportion rightward for each contrast type
+                performance = np.vectorize(lambda x: np.mean(rightward[(x == signed_contrast) & block_idx]))(contrasts)
+
+            return performance, contrasts, n_contrasts
+
+
+        def compute_n_trials(trials):
+            """
+            Compute number of trials in trials object
+
+            :param trials: trials object
+            :type trials: dict
+            returns: int containing number of trials in session
+            """
+            return trials['choice'].shape[0]
+
+        import psychofit as psy
+        def compute_psychometric(trials, signed_contrast=None, block=None, plotting=False):
+            """
+            Compute psychometric fit parameters for trials object
+
+            :param trials: trials object that must contain contrastLeft, contrastRight and probabilityLeft
+            :type trials: dict
+            :param signed_contrast: array of signed contrasts in percent, where -ve values are on the left
+            :type signed_contrast: np.array
+            :param block: biased block can be either 0.2 or 0.8
+            :type block: float
+            :return: array of psychometric fit parameters - bias, threshold, lapse high, lapse low
+            """
+
+            if signed_contrast is None:
+                signed_contrast = get_signed_contrast(trials)
+
+            if block is None:
+                block_idx = np.full(trials.probabilityLeft.shape, True, dtype=bool)
+            else:
+            
+                block_idx = trials.probabilityLeft == block
+
+            if not np.any(block_idx):
+                return np.nan * np.zeros(4)
+
+            prob_choose_right, contrasts, n_contrasts = compute_performance(trials, signed_contrast=signed_contrast, block=block,
+                                                                            prob_right=True)
+
+            if plotting:
+                psych, _ = psy.mle_fit_psycho(
+                    np.vstack([contrasts, n_contrasts, prob_choose_right]),
+                    P_model='erf_psycho_2gammas',
+                    parstart=np.array([0., 40., 0.1, 0.1]),
+                    parmin=np.array([-50., 10., 0., 0.]),
+                    parmax=np.array([50., 50., 0.2, 0.2]),
+                    nfits=10)
+            else:
+
+                psych, _ = psy.mle_fit_psycho(
+                    np.vstack([contrasts, n_contrasts, prob_choose_right]),
+                    P_model='erf_psycho_2gammas',
+                    parstart=np.array([np.mean(contrasts), 20., 0.05, 0.05]),
+                    parmin=np.array([np.min(contrasts), 0., 0., 0.]),
+                    parmax=np.array([np.max(contrasts), 100., 1, 1]))
+
+            return psych
+        def get_signed_contrast(trials): 
+            """
+            Compute signed contrast from trials object
+
+            :param trials: trials object that must contain contrastLeft and contrastRight keys
+            :type trials: dict
+            returns: array of signed contrasts in percent, where -ve values are on the left
+            """
+            # Replace NaNs with zeros, stack and take the difference
+            contrast = np.nan_to_num(np.c_[trials['contrastLeft'], trials['contrastRight']])
+            return np.diff(contrast).flatten() * 100
+
+        contrasts_2 = [-100. , -25. , 0. , 25. , 100. ]
+
+        """
+        Psychometric plot
+        """
+        def plot_psychometric(trials, ax=None, title=None, suptitle=None, **kwargs):
+            """
+            Function to plot pyschometric curve plots a la datajoint webpage
+            :param trials:
+            :return:
+            """
+            plt.rcParams['figure.figsize'] = [5, 5]
+            plt.rcParams["figure.dpi"] = 300
+
+            signed_contrast = get_signed_contrast(trials)
+            contrasts_fit = np.arange(-100, 100)
+
+            prob_right_50, contrasts_50, _ = compute_performance(trials, signed_contrast=signed_contrast, block=0.5, prob_right=True)
+            pars_50 = compute_psychometric(trials, signed_contrast=signed_contrast, block=0.5, plotting=True)
+            prob_right_fit_50 = psy.erf_psycho_2gammas(pars_50, contrasts_fit)
+
+            prob_right_20, contrasts_20, _ = compute_performance(trials, signed_contrast=signed_contrast, block=0.2, prob_right=True)
+            pars_20 = compute_psychometric(trials, signed_contrast=signed_contrast, block=0.2, plotting=True)
+            prob_right_fit_20 = psy.erf_psycho_2gammas(pars_20, contrasts_fit)
+
+            prob_right_80, contrasts_80, _ = compute_performance(trials, signed_contrast=signed_contrast, block=0.8, prob_right=True)
+            pars_80 = compute_psychometric(trials, signed_contrast=signed_contrast, block=0.8, plotting=True)
+            prob_right_fit_80 = psy.erf_psycho_2gammas(pars_80, contrasts_fit)
+
+            cmap = ["#E07C12","#320F42","#008F7C"]
+
+            if not ax:
+                fig, ax = plt.subplots(**kwargs)
+            else:
+                fig = plt.gcf()
+
+            # TODO error bars
+
+            fit_50 = ax.plot(contrasts_fit, prob_right_fit_50, color=cmap[1])
+            data_50 = ax.scatter(contrasts_50, prob_right_50, color=cmap[1], alpha=0.5)
+            fit_20 = ax.plot(contrasts_fit, prob_right_fit_20, color=cmap[0])
+            data_20 = ax.scatter(contrasts_20, prob_right_20, color=cmap[0], alpha=0.5)
+            fit_80 = ax.plot(contrasts_fit, prob_right_fit_80, color=cmap[2])
+            data_80 = ax.scatter(contrasts_80, prob_right_80, color=cmap[2], alpha=0.5)
+            ax.legend([fit_50[0], data_50, fit_20[0], data_20, fit_80[0], data_80],
+                    ['p_left=0.5 fit', 'p_left=0.5 data', 'p_left=0.2 fit', 'p_left=0.2 data', 'p_left=0.8 fit', 'p_left=0.8 data'],
+                    loc='lower right',
+                    fontsize=8)
+            ax.set_ylim(-0.05, 1.05)
+            ax.set_ylabel('Probability choosing right')
+            ax.set_xlabel('Contrasts') 
+            plt.xticks(contrasts_2)
+            plt.axhline(y=0.5,color = 'gray', linestyle = '--',linewidth=0.25) 
+            plt.axvline(x=0.5,color = 'gray', linestyle = '--',linewidth=0.25) 
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+            if title:
+                ax.set_title(title)
+            if suptitle:
+                plt.suptitle(suptitle, y=1.1)
+
+            return fig, ax
+        fig, ax = plot_psychometric(trials, title=f"{mouse}_{date}_{eid}", suptitle=f"{performance}")
+        # fig.savefig(f'/mnt/h0/kb/psyc/{mouse}_{date}_{eid}_psychometricplot.png') 
+        plt.show()
+
+    except: 
+        skipped_idxs.append(i)
+
+
+
+# %%
