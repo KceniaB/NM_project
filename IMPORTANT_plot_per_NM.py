@@ -437,8 +437,8 @@ plt.show()
 # path_initial = '/mnt/h0/kb/data/psth_npy/preprocess_calcium_jove2019_feedback_times_etc/' 
 # np.save(path_initial+f'RESULTS/jove2019_psth_combined_{NM}_{EVENT}.npy', psth_combined)
 # df_trials_combined.to_parquet(path_initial+f'RESULTS/jove2019_df_trials_combined_{NM}_{EVENT}.pqt')
-np.save(path_initial+f'RESULTS/jove2019_psth_combined_{NM}_{EVENT}_BCW.npy', psth_combined)
-df_trials_combined.to_parquet(path_initial+f'RESULTS/jove2019_df_trials_combined_{NM}_{EVENT}_BCW.pqt')
+np.save(path_initial+f'RESULTS/jove2019_psth_combined_{NM}_{EVENT}_BCW_2.npy', psth_combined)
+df_trials_combined.to_parquet(path_initial+f'RESULTS/jove2019_df_trials_combined_{NM}_{EVENT}_BCW_2.pqt')
 
 
 
